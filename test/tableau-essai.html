@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tableau d'essai — Mesure des largeurs</title>
+<style>
+  /* ── Réglages A4 ── */
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Arial Narrow", Arial, sans-serif;
+    font-size: 8pt;
+    line-height: 1.15;
+    color: #000;
+  }
+
+  /* ── En-tête (estimé, logos en placeholder) ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12pt;
+    font-size: 7pt;
+  }
+  .header-left, .header-center, .header-right {
+    width: 30%;
+  }
+  .header-left { text-align: left; }
+  .header-center { text-align: center; }
+  .header-right { text-align: right; }
+  .logo-placeholder {
+    display: inline-block;
+    width: 80px;
+    height: 24px;
+    background: #ddd;
+    border: 1px dashed #999;
+    font-size: 6pt;
+    color: #666;
+    text-align: center;
+    line-height: 24px;
+  }
+  .header-title {
+    text-align: center;
+    font-size: 11pt;
+    font-weight: bold;
+    color: #1a237e;
+    text-decoration: underline;
+    margin-bottom: 8pt;
+  }
+
+  /* ── Tableau ── */
+  table {
+    width: 180mm;  /* 210 - 2×15 */
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  th, td {
+    border: 1px solid #000;
+    padding: 1.5pt 1.5pt;
+    vertical-align: top;
+    text-align: center;
+  }
+  th {
+    background: #e8eaf6;
+    font-weight: bold;
+    font-size: 7pt;
+  }
+  /* Ligne d'en-tête direction */
+  .dir-header {
+    background: #c5cae9;
+    font-size: 8pt;
+    font-weight: bold;
+    text-align: center;
+  }
+  /* Mesure intégrée dans le tableau */
+  .meas {
+    font-size: 5.5pt;
+    color: #c00;
+    font-weight: bold;
+    display: block;
+    margin-top: 1px;
+  }
+
+  /* ── Largeurs colonnes à mesurer ── */
+  /* Estimation spec §10 : 5 premières ~96mm, reste ~14mm/ch × 6 */
+  .col-num      { width: 10mm; }
+  .col-theme    { width: 28mm; }
+  .col-lieu     { width: 18mm; }
+  .col-nom      { width: 30mm; }
+  .col-effectif { width: 10mm; }
+  .col-slot     { width: 14mm; } /* 6 colonnes × 14mm = 84mm */
+  /* Total : 10+28+18+30+10+84 = 180mm ✓ */
+
+  /* ── Contenu type ── */
+  .present-line {
+    font-weight: bold;
+    font-size: 8pt;
+  }
+  .heure-line {
+    font-size: 6.5pt;
+    color: #333;
+  }
+  .absent {
+    font-weight: bold;
+    color: #c00;
+  }
+  .row-num {
+    font-weight: bold;
+    font-size: 8pt;
+  }
+  .row-name {
+    text-align: left;
+    padding-left: 2pt;
+    font-size: 7pt;
+    white-space: nowrap;
+  }
+
+  /* ── Règle visuelle pour mesure ── */
+  .ruler {
+    margin: 12pt 0 6pt 0;
+    font-size: 7pt;
+    color: #666;
+  }
+  .ruler-line {
+    width: 180mm;
+    height: 1px;
+    background: repeating-linear-gradient(
+      to right,
+      #c00 0mm, #c00 1mm,
+      transparent 1mm, transparent 10mm
+    );
+    margin: 2pt 0;
+    position: relative;
+  }
+  .ruler-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 6pt;
+    color: #c00;
+  }
+
+  /* ── Instruction ── */
+  .instructions {
+    background: #fff3e0;
+    border: 1px solid #ff9800;
+    padding: 8pt;
+    margin-bottom: 10pt;
+    font-size: 8pt;
+    line-height: 1.4;
+  }
+  .instructions strong { color: #e65100; }
+  @media print {
+    .instructions { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="instructions">
+  <strong>ⓘ Mesure des largeurs — spec §10</strong><br>
+  1. Ouvrir la <strong>boîte de dialogue d'impression</strong> (Ctrl+P ou Cmd+P).<br>
+  2. Choisir <strong>A4, portrait, marges 15 mm</strong>, échelle 100 %.<br>
+  3. Regarder l'<strong>aperçu</strong> ou imprimer sur papier / en PDF.<br>
+  4. <strong>Mesurer</strong> la largeur des colonnes de créneaux (les 6 colonnes « J1…J3 Matin/Midi ») dans lesquelles apparaît « P 08h42 ».<br>
+  5. Si « P 08h42 » tient sur <strong>une seule ligne</strong> → <strong>portrait</strong> OK.<br>
+  6. Si ça déborde (ou si la colonne fait &lt; 14mm de large) → <strong>paysage</strong> nécessaire.<br>
+  7. <strong>Rapporter ici</strong> la largeur réelle d'une colonne Jx + le texte « P 08h42 » tient-il sur une ligne.
+</div>
+
+<div class="ruler">
+  <strong>Règle — 180 mm utiles</strong>
+  <div class="ruler-line"></div>
+  <div class="ruler-label">
+    <span>0</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span>
+    <span>60</span><span>70</span><span>80</span><span>90</span><span>100</span><span>110</span>
+    <span>120</span><span>130</span><span>140</span><span>150</span><span>160</span><span>170</span><span>180</span>
+  </div>
+  <span style="font-size:6pt;color:#c00;">Chaque trait rouge = 1 mm</span>
+</div>
+
+<!-- ─── En-tête du rapport ─── -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-placeholder">GREEN<br>INNOVATIVE'S</div>
+  </div>
+  <div class="header-center">
+    <div class="logo-placeholder">ACCA<br>SOFTWARE</div>
+  </div>
+  <div class="header-right">
+    <div class="logo-placeholder">BIM<br>Architecture</div>
+  </div>
+</div>
+
+<div class="header-title">LISTE DE PRÉSENCE</div>
+
+<!-- ─── Tableau d'essai ─── -->
+<table>
+  <!-- 1ʳᵉ ligne d'en-tête -->
+  <thead>
+    <tr>
+      <th rowspan="2" class="col-num">N°</th>
+      <th rowspan="2" class="col-theme">THÈMES</th>
+      <th rowspan="2" class="col-lieu">LIEU</th>
+      <th rowspan="2" class="col-nom">PERSONNELS</th>
+      <th rowspan="2" class="col-effectif">EFFECTIFS</th>
+      <th colspan="2" class="col-slot">Jour 1 (04/08)</th>
+      <th colspan="2" class="col-slot">Jour 2 (05/08)</th>
+      <th colspan="2" class="col-slot">Jour 3 (06/08)</th>
+    </tr>
+    <tr>
+      <th class="col-slot">Matin</th>
+      <th class="col-slot">Midi</th>
+      <th class="col-slot">Matin</th>
+      <th class="col-slot">Midi</th>
+      <th class="col-slot">Matin</th>
+      <th class="col-slot">Midi</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- 16 lignes représentatives -->
+    <tr>
+      <td class="row-num">1</td>
+      <td rowspan="16" style="font-size:6pt;text-align:left;padding:2pt;writing-mode:vertical-lr;text-orientation:mixed;">
+        Initiation au processus BIM dans la gestion des projets Immobiliers
+      </td>
+      <td rowspan="16" style="font-size:8pt;font-weight:bold;">DOUALA</td>
+      <td class="row-name">YEBGA Jacques Albert</td>
+      <td rowspan="16" style="font-size:10pt;font-weight:bold;">16</td>
+      <td><!-- J1 Matin --><span class="present-line">P</span><br><span class="heure-line">08h42</span></td>
+      <td><!-- J1 Midi --><span class="present-line">P</span><br><span class="heure-line">13h05</span></td>
+      <td><!-- J2 Matin --><span class="present-line">P</span><br><span class="heure-line">08h11</span></td>
+      <td><!-- J2 Midi --><span class="absent">A</span></td>
+      <td><!-- J3 Matin --></td>
+      <td><!-- J3 Midi --></td>
+    </tr>
+    <tr>
+      <td class="row-num">2</td>
+      <td class="row-name">ANYOUZO'A Marc Thyrille</td>
+      <td><span class="absent">A</span></td>
+      <td><span class="absent">A</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">08h57</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">12h48</span></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">3</td>
+      <td class="row-name">NGOUDJO Fabrice Patrick</td>
+      <td><span class="present-line">P</span><br><span class="heure-line">08h30</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">13h00</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">4</td>
+      <td class="row-name">AKOLEO Lionel</td>
+      <td><span class="present-line">P</span><br><span class="heure-line">08h45</span></td>
+      <td><span class="absent">A</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">5</td>
+      <td class="row-name">ENAM NDONGO Benjamin Davy</td>
+      <td><span class="present-line">P</span><br><span class="heure-line">09h12</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">13h30</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">6</td>
+      <td class="row-name">BELLA Thierry Martial</td>
+      <td><span class="absent">A</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">13h15</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">7</td>
+      <td class="row-name">LOMIE MPELLE Kenny Borel</td>
+      <td><span class="present-line">P</span><br><span class="heure-line">08h33</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">12h55</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">8</td>
+      <td class="row-name">BUINDA Theophilus YUKBANWI</td>
+      <td><span class="present-line">P</span><br><span class="heure-line">09h05</span></td>
+      <td><span class="absent">A</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">9</td>
+      <td class="row-name">MVA Cherel Christian</td>
+      <td><span class="absent">A</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">12h40</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">10</td>
+      <td class="row-name">NDJOMO Christian Stéphane</td>
+      <td><span class="present-line">P</span><br><span class="heure-line">08h50</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">13h10</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">11</td>
+      <td class="row-name">KOMOL MONGO Joseph</td>
+      <td><span class="present-line">P</span><br><span class="heure-line">09h20</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">14h00</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">12</td>
+      <td class="row-name">BAYOKOLAK Guy Robert</td>
+      <td><span class="present-line">P</span><br><span class="heure-line">08h40</span></td>
+      <td><span class="absent">A</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">13</td>
+      <td class="row-name">NTOLO Daniel Olivier</td>
+      <td><span class="absent">A</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">13h20</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">14</td>
+      <td class="row-name">MBIDA EYENGA Rollin</td>
+      <td><span class="present-line">P</span><br><span class="heure-line">08h38</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">13h02</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">15</td>
+      <td class="row-name">ELANG BEYEME Wilfried</td>
+      <td><span class="present-line">P</span><br><span class="heure-line">08h51</span></td>
+      <td><span class="absent">A</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="row-num">16</td>
+      <td class="row-name">MBIAHEU Stéphanie Merveille</td>
+      <td><span class="present-line">P</span><br><span class="heure-line">08h48</span></td>
+      <td><span class="present-line">P</span><br><span class="heure-line">13h08</span></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="margin-top:10pt;font-size:6pt;color:#999;text-align:center;">
+  Tableau d'essai — SPEC §10 · Colonnes : N°(10) + THÈMES(28) + LIEU(18) + NOM(30) + EFF(10) + 6×14 = 180mm
+</div>
+
+</body>
+</html>

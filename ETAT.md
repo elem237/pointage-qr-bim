@@ -14,6 +14,7 @@
 | 8 | `feedback.js` — Audio + vibration (C7) | `js/feedback.js`, `test/feedback.test.js` | 8/8 | 2026-07-15 |
 | 9 | Écran Scan — UI + sélecteur Auto/Matin/Midi | `js/ui/screen-scan.js`, `test/screen-scan.test.js` | 16 (22 fonctions pures+imports) | 2026-07-15 |
 | 10 | 🔴 `report.js` — etatCellule, stats | `js/model/report.js`, `test/report.test.js` | 18/18 | 2026-07-15 |
+| 11 | Écran Rapport + `@media print` → PDF | `js/ui/screen-report.js`, `css/app.css`, `assets/logos.js`, `test/screen-report.test.js` | 27/27 | 2026-07-15 |
 
 ## Décisions prises hors spec
 
@@ -98,6 +99,18 @@ La spec définit `presents(s) = |{ p : etatCellule(p,s).type = 'present' }|`. L'
 ### E3 (tri) laissé à l'étape 11
 La spec §E3 décrit les tris mais l'étape 10 livre seulement `etatCellule` et `stats`. `PARTICIPANTS` est déjà ordonné par `numero` en lecture. Les tris alphabétique/assiduité sont réservés à l'écran de consultation (`screen-report.js`, étape 11+). Aucune fonction de tri exportée de `report.js`.
 
+### Portrait choisi sans mesure réelle (étape 11)
+La spec §10 demande d'imprimer un tableau d'essai et de mesurer avant de trancher portrait/paysage. Le tableau d'essai a été créé (`test/tableau-essai.html`) mais aucune impression n'a été faite. Décision : portrait (bi-ligne `P` + `08h42` tient dans 14mm en 8pt condensé). Si l'impression montre un problème, passer au paysage avec un `@page` landscape.
+
+### formatTau en "h" pour le rapport (pas ":" comme screen-scan)
+Le format d'heure dans le tableau du rapport suit le document source qui montre "08h42" (avec "h"). L'écran de scan utilise "08:42" (avec ":"). Les deux `formatTau` sont dupliqués (`screen-scan.js` et `screen-report.js`) avec des séparateurs différents. Décision : suivre la spec pour chaque contexte.
+
+### screenReport synchrone (pas async)
+Contrairement à `screenScan` qui est async (démarrage caméra), `screenReport` n'a aucune opération asynchrone : elle lit les pointages depuis une Map en mémoire et génère du HTML. Décision : fonction synchrone, retourne un contrôleur avec `refresh()`. Si une étape future nécessite de charger des pointages depuis IndexedDB, l'appelant fera l'await avant d'appeler `screenReport`.
+
+### Logos manquants : visuel 3D + QR décoratif
+La spec §10 décrit un visuel 3D + QR décoratif en haut à droite. L'image n'a pas été fournie dans le .docx source. `assets/logos.js` exporte `LOGO_3D = null`. Le rendu ignore ce logo (pas d'élément `<img>` manquant). Si le fichier est fourni plus tard, l'ajouter.
+
 ## Écarts assumés par rapport à la spec
 
 ### `norm()` — remplacement des apostrophes courbes (§5 A1)
@@ -119,6 +132,10 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 - `screen-scan.js` : les tests DOM (structure, bouton, sélecteur) ne tournent qu'au navigateur (manque `document.createElement` en Node). Les 4 tests P2/P3/P15/P16 ne peuvent pas être vérifiés en CLI — seulement via `http://localhost:8000/test/index.html`.
 - `report.js` : `cle()` est une fonction privée (non exportée) dupliquée de `pipeline.js` — les deux construisent la même clé `"id|date|creneau"`. Si une refactor future exporte `cle()` d'un module commun, les deux appels devront être mis à jour simultanément.
 - `report.js` : `finDe` calcule la fin de matin à H_BASCULE et midi à H_FIN_MIDI. Si une étape future ajoute un créneau (ex. `soir`), `finDe` et `slotsEchus` devront être adaptées.
+- `assets/logos.js` : `LOGO_3D = null` (visuel 3D + QR décoratif non fourni). Ajouter l'image base64 si elle est extraite du .docx.
+- `screen-report.js` : `formatTau` dupliqué depuis `screen-scan.js` avec un séparateur "h" au lieu de ":". Si une refactor future centralise les formats, rapprocher les deux.
+- `screen-report.js` : le choix portrait/paysage n'a pas été mesuré sur impression réelle. Vérifier sur une vraie imprimante avant le jour J. Si ça ne tient pas, ajouter une classe `.landscape` et changer `@page`.
+- `css/app.css` : les écrans autres que le rapport (scan, liste) n'ont pas encore de styles. Le fichier ne contient que les styles du rapport.
 
 ## Pièges rencontrés
 
@@ -136,16 +153,17 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 12. **Tests de décodage et caméra impossible en Node.** `ImageData`, `navigator.mediaDevices.getUserMedia`, `BarcodeDetector` sont des API navigateur. Les tests C2/C1 de l'étape 6 ne tournent pas en Node — seulement le navigateur ou un test unitaire partiel (debounce uniquement). Pour une CI sans navigateur, la sortie Node des 7 tests debounce + 2 tests d'existence d'export est la meilleure approximation.
 13. **`window` non défini en Node → ReferenceError.** En écrivant `window.AudioContext` dans `initAudio()`, le module planta en Node (test line). Solution : `typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)`.
 14. **`globalThis.navigator` en Node est un getter read-only.** Impossible de l'assigner directement pour mocker `navigator.vibrate`. Solution : `Object.defineProperty(globalThis, 'navigator', { configurable: true, get: () => ({ vibrate: fn }) })`.
+15. **Les nœuds texte entre `<tr>` dans `<thead>` cassent `:last-child` et `nth-child`.** Le sélecteur CSS `thead tr:last-child` ne trouve aucun élément car le dernier enfant de `<thead>` est un nœud texte (saut de ligne). Solution : utiliser `thead > tr` (qui ignore les nœuds texte) puis indexer par position, ou utiliser `:last-of-type`.
+16. **`rowspan=16` est dans le `tbody` (1ʳᵉ ligne), pas dans le `thead`.** La spec dit « N° a rowspan=16 » — c'est une fusion verticale des 16 lignes du corps du tableau. Dans le `thead`, N°/THÈMES/LIEU/EFFECTIFS ont `rowspan=2` (les 2 lignes d'en-tête). Confusion facile : vérifier où est la rangée qui a 16 éléments avant d'écrire les tests.
+17. **Playwright ne peut pas se connecter au serveur HTTP Python si le serveur est tué entre deux appels bash.** Le serveur python3 doit survivre entre les appels `bash` du domaine. Utiliser `nohup` avec `--directory` ou utiliser le même appel bash pour lancer le serveur ET le test.
 
 ## Prochaine étape
 
-**Étape 11** — Écran Rapport + `@media print` → PDF.
+**Étape 12** — `badges.js` — planche A4 de 16 QR en version 1-Q.
 Ce qu'elle attend de l'existant :
-- `report.js` (`etatCellule`, `presents`, `taux`, `theta`, `finDe`, `slotsEchus`) pour les données du rapport
-- `config.js` (`getConfig()` → toutes les constantes) pour l'en-tête
-- `data.js` (`PARTICIPANTS`) pour les 16 lignes
-- `slots.js` (`slotDe`) pour les créneaux
-- `ident.js` (`idDe`) pour les ids
-- `assets/logos.js` (base64) pour les logos d'en-tête
-- `lattice.js` n'est pas nécessaire directement (report.js fait le lien)
-- `store.js`, `camera.js`, `pipeline.js`, `feedback.js`, `screen-scan.js` ne sont pas nécessaires — l'écran Rapport est une page statique générée depuis les pointages en mémoire.
+- `ident.js` (`payload()`, `idDe()`, `CHECKSUMS`) pour les données des badges
+- `data.js` (`PARTICIPANTS`) pour les 16 noms
+- `config.js` (`getConfig()` → `QR_EC`, `PREFIXE_ID`, `BADGES_PAR_PAGE`) pour les réglages QR
+- `vendor/qrcode.js` (génération QR, à vendoriser)
+- `css/app.css` (les styles `@media print` existent déjà depuis l'étape 11)
+- Pas besoin de : `store.js`, `camera.js`, `pipeline.js`, `feedback.js`, `screen-scan.js`, `screen-report.js`, `report.js`, `lattice.js`, `slots.js`, `norm.js`

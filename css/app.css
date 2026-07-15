@@ -1,0 +1,200 @@
+/* ── Écran Rapport (E4) — spec §10 ── */
+
+/* ── Écran ── */
+#screen-report {
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 8px;
+  font-family: "Arial Narrow", Arial, sans-serif;
+  font-size: 8pt;
+  line-height: 1.15;
+  color: #000;
+  background: #fff;
+}
+
+/* ── En-tête ── */
+.report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8pt;
+}
+.report-header-left,
+.report-header-center,
+.report-header-right {
+  width: 30%;
+}
+.report-header-left { text-align: left; }
+.report-header-center { text-align: center; }
+.report-header-right { text-align: right; }
+.report-header img {
+  max-height: 40px;
+  width: auto;
+}
+.report-bullets {
+  font-size: 6pt;
+  line-height: 1.3;
+  color: #333;
+}
+.report-header-right {
+  position: relative;
+}
+.report-header-corner {
+  position: absolute;
+  top: -4pt;
+  right: 0;
+  display: flex;
+  gap: 2pt;
+  align-items: flex-start;
+}
+.report-header-qr {
+  width: 28px;
+  height: auto;
+}
+.report-header-3d {
+  width: 14px;
+  height: auto;
+}
+
+/* ── Titre ── */
+.report-title {
+  text-align: center;
+  font-size: 11pt;
+  font-weight: bold;
+  color: #1a237e;
+  text-decoration: underline;
+  margin-bottom: 6pt;
+}
+
+/* ── Tableau ── */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.report-table th,
+.report-table td {
+  border: 1px solid #000;
+  padding: 1.5pt 1.5pt;
+  vertical-align: top;
+  text-align: center;
+}
+.report-table thead th {
+  background: #e8eaf6;
+  font-weight: bold;
+  font-size: 7pt;
+}
+
+/* En-tête direction */
+.report-dir-header {
+  background: #c5cae9;
+  font-size: 8pt;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Cellules */
+.report-cell-p {
+  font-weight: bold;
+  font-size: 8pt;
+}
+.report-cell-h {
+  font-size: 6.5pt;
+  color: #333;
+}
+.report-cell-a {
+  font-weight: bold;
+  color: #c00;
+}
+.report-cell-name {
+  text-align: left;
+  padding-left: 2pt;
+  font-size: 7pt;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.report-cell-theme {
+  font-size: 6pt;
+  text-align: left;
+  padding: 2pt;
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+}
+.report-cell-lieu {
+  font-size: 8pt;
+  font-weight: bold;
+}
+.report-cell-effectif {
+  font-size: 10pt;
+  font-weight: bold;
+}
+.report-cell-num {
+  font-weight: bold;
+  font-size: 8pt;
+}
+
+/* ── Stats (écran uniquement, pas dans le PDF) ── */
+.report-stats {
+  margin-top: 8pt;
+  font-size: 8pt;
+  line-height: 1.4;
+}
+.report-stats table {
+  width: auto;
+  border-collapse: collapse;
+}
+.report-stats th,
+.report-stats td {
+  border: 1px solid #999;
+  padding: 2pt 6pt;
+  font-size: 7pt;
+}
+.report-stats th {
+  background: #f5f5f5;
+}
+
+/* ── Impression ── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  #screen-report {
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .report-table thead {
+    display: table-header-group;
+  }
+
+  .report-table tbody tr {
+    break-inside: avoid;
+  }
+
+  .report-stats {
+    display: none;
+  }
+
+  /* Cacher tout ce qui n'est pas le rapport */
+  body > *:not(#screen-report) {
+    display: none !important;
+  }
+
+  .report-table th,
+  .report-table td {
+    border-color: #000;
+  }
+
+  .report-header img {
+    max-height: 48px;
+  }
+}
