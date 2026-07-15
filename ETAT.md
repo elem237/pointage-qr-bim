@@ -6,6 +6,7 @@
 |---|---|---|---|---|
 | 1 | `config.js`, `data.js`, `norm.js` + harnais | `js/config.js`, `js/data.js`, `js/model/norm.js`, `test/index.html`, `test/harness.js`, `test/norm.test.js`, `test/data.test.js`, `test/config.test.js` | 16/16 | 2026-07-15 |
 | 2 | `ident.js` (A2, A3, A4) 🔴 — payload + valider | `js/model/ident.js`, `test/ident.test.js` | 33/33 | 2026-07-15 |
+| 3 | 🔴 `lattice.js` — rang, join, fusion | `js/model/lattice.js`, `test/lattice.test.js` | 17/17 | 2026-07-15 |
 
 ## Décisions prises hors spec
 
@@ -42,6 +43,7 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 - Aucun pour l'étape 1.
 - `hydrateConfig()` sera appelée par `main.js` à l'étape 4 — pour l'instant `_overrides` reste vide.
 - `precalcChecksums()` sera appelée par `main.js` à l'étape 4 — pour l'instant les tests l'appellent manuellement.
+- `js/model/lattice.js` référence `@typedef {import('../data.js').PointageValue}` mais `PointageValue` n'est défini nulle part en JSDoc (la spec §4.2 le donne en commentaire uniquement). Sans conséquence runtime, mais un `@typedef` dans `data.js` serait bien.
 
 ## Pièges rencontrés
 
@@ -55,8 +57,10 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 
 ## Prochaine étape
 
-**Étape 3** 🔴 — `js/model/lattice.js` (rang, join, fusion).
+**Étape 4** 🔴 — `js/db/store.js` (IndexedDB, reg, cancel).
 Ce qu'elle attend de l'existant :
-- `js/data.js` pour `PARTICIPANTS` (utilisé indirectement via les clés)
-- `js/model/ident.js` pour `idDe()` et `IDS_CONNUS` (pour générer les clés de test)
+- `js/config.js` pour `DEFAULTS` et `getConfig()`
+- `js/data.js` pour `PARTICIPANTS`
+- `js/model/ident.js` pour `idDe()`, `IDS_CONNUS`
+- `js/model/lattice.js` pour `join`, `fusion`
 - `test/harness.js` pour le lanceur
