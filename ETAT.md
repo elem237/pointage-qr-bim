@@ -12,6 +12,7 @@
 | 6 | `camera.js`, `decode.js`, `debounce.js` (scan brut) | `vendor/jsqr.js`, `js/scan/camera.js`, `js/scan/decode.js`, `js/scan/debounce.js`, `test/scan.test.js` | 12/12 | 2026-07-15 |
 | 7 | 🔴 `pipeline.js` — `Scan()` | `js/scan/pipeline.js`, `test/pipeline.test.js`, `test/index.html` | 9/9 | 2026-07-15 |
 | 8 | `feedback.js` — Audio + vibration (C7) | `js/feedback.js`, `test/feedback.test.js` | 8/8 | 2026-07-15 |
+| 9 | Écran Scan — UI + sélecteur Auto/Matin/Midi | `js/ui/screen-scan.js`, `test/screen-scan.test.js` | 16 (22 fonctions pures+imports) | 2026-07-15 |
 
 ## Décisions prises hors spec
 
@@ -69,6 +70,21 @@ La spec dit « 660 Hz ×2, 80 ms » sans préciser l'intervalle. Choix : délai 
 ### `initAudio()` protégée contre l'absence de `window` en Node
 `window` n'existe pas en Node → `window.AudioContext` lève ReferenceError. Décision : ajouter `typeof window !== 'undefined' &&` en garde. Même motif que `vibrer()` qui protège `typeof navigator`.
 
+### Couleurs hex du feedback visuel non spécifiées
+La spec §8 donne « vert », « orange », « rouge », « gris » sans valeurs hex. Choix : `#4caf50` (vert Material), `#ff9800` (orange), `#f44336` (rouge), `#9e9e9e` (gris). Cohérent avec Material Design. Si un thème métier exige d'autres teintes, changer les 4 constantes dans `screen-scan.js:couleurPourResultat()`.
+
+### Messages d'erreur ERREUR choisis librement
+La spec §8 dit « message dédié » pour `format`/`checksum`/`inconnu` sans préciser le texte. Choix : « Format non reconnu », « Checksum invalide », « Code inconnu ». Si le client veut des libellés différents, les changer dans `messagePourResultat()`.
+
+### H_MAP (debounce) module-level dans screen-scan.js
+L'historique anti-rebond `H` est une `Map` privée au niveau du module (`const H_MAP = new Map()`), partagée entre tous les appels à `screenScan()` sur la même page. Décision : pas besoin de la passer comme paramètre car il n'y a qu'un seul écran de scan à la fois. Si un futur routage d'écrans crée/détruit plusieurs instances, `H_MAP` devra être réinitialisé.
+
+### formatTau calcule HH:MM en UTC+1 manuel
+Pour afficher « déjà pointé à HH:MM », `formatTau()` ajoute 3600000 ms à l'epoch puis lit `getUTCHours/minutes`. Même pattern que `localDouala()` dans `slots.js`. Pas de `toLocaleString` (évite dépendance au fuseau OS). Décision : duplication du pattern plutôt que d'exporter `localDouala` depuis `slots.js` (modification d'un module existant hors étape 9).
+
+### Overlay résultat en `position:absolute` en bas
+La spec ne précise pas le placement du message de résultat. Choix : overlay positionné en bas de l'écran (`bottom:0`), semi-transparent si fond, pour ne pas masquer le flux caméra. Le sélecteur Auto/Matin/Midi est en haut. Le flux vidéo est en `display:block` derrière.
+
 ## Écarts assumés par rapport à la spec
 
 ### `norm()` — remplacement des apostrophes courbes (§5 A1)
@@ -78,8 +94,8 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 
 ## Dettes / TODO laissés derrière
 
-- `hydrateConfig()` sera appelée par `main.js` (étape 9, écran Scan) — pour l'instant `_overrides` reste vide.
-- `precalcChecksums()` sera appelée par `main.js` (étape 9) — pour l'instant les tests l'appellent manuellement.
+- `hydrateConfig()` sera appelée par `main.js` (étape 10+) — pour l'instant `_overrides` reste vide.
+- `precalcChecksums()` sera appelée par `main.js` (étape 10+) — pour l'instant les tests l'appellent manuellement.
 - `js/model/lattice.js` référence `@typedef {import('../data.js').PointageValue}` mais `PointageValue` n'est défini nulle part en JSDoc (la spec §4.2 le donne en commentaire uniquement). Sans conséquence runtime, mais un `@typedef` dans `data.js` serait bien.
 - `store.js` importe `getConfig()` (dépendance déclarée) mais ne l'utilise pas encore — nécessaire pour `reg` si `DEFAULTS` influence le comportement plus tard.
 - `deletePointage()` dans `store.js` est exporté inutilisé — réservé pour l'étape 13+ (écran Liste, reset de pointage).
@@ -87,6 +103,7 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 - `decode.js` n'est pas testable en Node — `ImageData` inexistant, `BarcodeDetector` inexistant. Le test `decode(bruit) → null` ne tourne que dans un navigateur.
 - `pipeline.js` branche 1 (decode réel + ImageData noise) ne tourne qu'au navigateur. Les branches 2-5 utilisent `_decode` injectable, testables en Node.
 - `pipeline.js` n'appelle pas `roi()` — cohérent avec le fait que `camera.js` livre déjà l'ImageData rogné. Si l'étape 9 ou 13 appelle `Scan()` sans passer par `camera.js`, l'image ne sera pas rognée. Ce n'est pas un bug tant que l'appelant applique ROI avant.
+- `screen-scan.js` : les tests DOM (structure, bouton, sélecteur) ne tournent qu'au navigateur (manque `document.createElement` en Node). Les 4 tests P2/P3/P15/P16 ne peuvent pas être vérifiés en CLI — seulement via `http://localhost:8000/test/index.html`.
 
 ## Pièges rencontrés
 
@@ -107,12 +124,12 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 
 ## Prochaine étape
 
-**Étape 9** — Écran Scan — UI + sélecteur Auto/Matin/Midi.
+**Étape 10** — 🔴 `report.js` — etatCellule, stats.
 Ce qu'elle attend de l'existant :
-- `feedback.js` (cette étape) pour déclencher son + vibration
-- `pipeline.js` (`Scan()`) pour la logique de pointage
-- `camera.js` pour la boucle vidéo
-- `store.js` pour la persistance
-- `config.js` pour les constantes
-- `initAudio()` doit être appelée depuis un clic (contournement iOS)
-- `screen-scan.js` à créer dans `js/ui/`
+- `lattice.js` (`join`, `fusion`) pour le treillis
+- `store.js` (`getPointages()`) pour lire les pointages
+- `slots.js` (`slotDe`) pour les créneaux
+- `ident.js` (`idDe`) pour les ids
+- `config.js` (`getConfig()` → `DATES`, `H_*`) pour les constantes
+- `screen-scan.js`, `camera.js`, `pipeline.js` ne sont pas nécessaires (report est un module pur)
+- Module marqué 🔴 : écrire les tests AVANT le code.
