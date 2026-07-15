@@ -10,6 +10,7 @@
 | 4 | 🔴 `store.js` — IndexedDB, reg, cancel | `js/db/store.js`, `test/store.test.js` | 22/22 | 2026-07-15 |
 | 5 | `slots.js` — slotDe, slotAvecOverride | `js/model/slots.js`, `test/slots.test.js` | 13/13 | 2026-07-15 |
 | 6 | `camera.js`, `decode.js`, `debounce.js` (scan brut) | `vendor/jsqr.js`, `js/scan/camera.js`, `js/scan/decode.js`, `js/scan/debounce.js`, `test/scan.test.js` | 12/12 | 2026-07-15 |
+| 7 | 🔴 `pipeline.js` — `Scan()` | `js/scan/pipeline.js`, `test/pipeline.test.js`, `test/index.html` | 9/9 | 2026-07-15 |
 
 ## Décisions prises hors spec
 
@@ -49,6 +50,15 @@ La spec §C4 donne la pseudo-code avec `3000` littéral, pas `getConfig().DEBOUN
 ### Geler la boucle : freeze() externe via le contrôleur
 La spec §C1 dit « Geler la boucle pendant l'affichage du résultat (300 ms) ». `lancerBoucle` retourne un contrôleur avec `freeze(ms)` appelable par pipeline.js. Décision : ne pas coder le gel dans la boucle elle-même — pipeline.js décide quand geler (après un scan réussi).
 
+### `Scan()` prend `_decode` injectable en 6e paramètre
+La spec §7 donne la signature `Scan(image, t, override, m, H)`. Pour tester les 5 branches sans générer un vrai QR (pas de `vendor/qrcode.js` avant l'étape 12), le 6e paramètre `_decode = decode` permet l'injection d'un `fakeDecode` dans les tests. La signature publique (5 premiers paramètres) correspond à la spec ; le 6e ne change pas l'API.
+
+### ROI extraite avant pipeline.js, pas dedans
+La spec §7 montre `w ← decode(roi(image))` — `roi()` fait partie du pseudo-code de Scan. Mais `camera.js:lancerBoucle` extrait déjà la ROI (`captureROI`) avant d'appeler `onFrame(roi)`. L'architecture sépare : la caméra gère le prélèvement, le pipeline la logique métier. Le pipeline reçoit l'ImageData déjà rogné. Conséquence : si un futur appelant appelle `Scan` sans passer par la caméra, il doit fournir un `ImageData` déjà rogné (ou accepter le décodage hors ROI).
+
+### `cle` construite inline dans Scan (pas de fonction dédiée)
+La spéciﬁcation formelle note `cle(w.id, s)` pour la clé de pointage, mais aucune fonction `cle()` n'est définie dans les modules du §2. La clé `"BIM26-{d}|{date}|{creneau}"` est donc construite inline dans pipeline.js par extraction regex du `w` (garanti valide par `valider`). Si une session future exporte `cle()` depuis `ident.js` ou ailleurs, le code pourra être refactoré.
+
 ## Écarts assumés par rapport à la spec
 
 ### `norm()` — remplacement des apostrophes courbes (§5 A1)
@@ -65,6 +75,8 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 - `deletePointage()` dans `store.js` est exporté inutilisé — réservé pour l'étape 13+ (écran Liste, reset de pointage).
 - `camera.js` importe `getConfig()` mais les tests Node ne peuvent pas vérifier `captureROI` et `lancerBoucle` (manque DOM/getUserMedia). Vérification uniquement du typage des exports.
 - `decode.js` n'est pas testable en Node — `ImageData` inexistant, `BarcodeDetector` inexistant. Le test `decode(bruit) → null` ne tourne que dans un navigateur.
+- `pipeline.js` branche 1 (decode réel + ImageData noise) ne tourne qu'au navigateur. Les branches 2-5 utilisent `_decode` injectable, testables en Node.
+- `pipeline.js` n'appelle pas `roi()` — cohérent avec le fait que `camera.js` livre déjà l'ImageData rogné. Si l'étape 9 ou 13 appelle `Scan()` sans passer par `camera.js`, l'image ne sera pas rognée. Ce n'est pas un bug tant que l'appelant applique ROI avant.
 
 ## Pièges rencontrés
 
@@ -83,14 +95,9 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 
 ## Prochaine étape
 
-**Étape 7** — 🔴 `pipeline.js` — `Scan()` de bout en bout.
+**Étape 8** — `feedback.js` — Audio + vibration (C7).
 Ce qu'elle attend de l'existant :
-- `js/config.js` pour `getConfig()`
-- `js/data.js` pour `PARTICIPANTS`
-- `js/model/ident.js` pour `valider`, `cle` (extraire cle depuis id + date + creneau)
-- `js/model/slots.js` pour `slotAvecOverride`
-- `js/scan/decode.js` pour `decode`
-- `js/scan/debounce.js` pour `retenir`
-- `js/db/store.js` pour `reg` (via Store)
-- `vendor/jsqr.js` pour le fallback de décodage
+- Les types de résultat de `Scan()` (5 branches) pour mapper son/signal/couleur
+- `js/config.js` pour des constantes éventuelles (fréquences)
 - `test/harness.js` pour le lanceur
+- ⚠️ Nécessite un vrai iPhone pour tester le déblocage de l'`AudioContext`
