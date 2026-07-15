@@ -8,6 +8,7 @@
 | 2 | `ident.js` (A2, A3, A4) 🔴 — payload + valider | `js/model/ident.js`, `test/ident.test.js` | 33/33 | 2026-07-15 |
 | 3 | 🔴 `lattice.js` — rang, join, fusion | `js/model/lattice.js`, `test/lattice.test.js` | 17/17 | 2026-07-15 |
 | 4 | 🔴 `store.js` — IndexedDB, reg, cancel | `js/db/store.js`, `test/store.test.js` | 22/22 | 2026-07-15 |
+| 5 | `slots.js` — slotDe, slotAvecOverride | `js/model/slots.js`, `test/slots.test.js` | 13/13 | 2026-07-15 |
 
 ## Décisions prises hors spec
 
@@ -52,7 +53,7 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 - `precalcChecksums()` sera appelée par `main.js` (étape 9) — pour l'instant les tests l'appellent manuellement.
 - `js/model/lattice.js` référence `@typedef {import('../data.js').PointageValue}` mais `PointageValue` n'est défini nulle part en JSDoc (la spec §4.2 le donne en commentaire uniquement). Sans conséquence runtime, mais un `@typedef` dans `data.js` serait bien.
 - `store.js` importe `getConfig()` (dépendance déclarée) mais ne l'utilise pas encore — nécessaire pour `reg` si `DEFAULTS` influence le comportement plus tard.
-- `deletePointage()` dans `store.js` est exporté inutilisé — réservé pour l'étape 5+ (reset de pointage).
+- `deletePointage()` dans `store.js` est exporté inutilisé — réservé pour l'étape 13+ (écran Liste, reset de pointage).
 
 ## Pièges rencontrés
 
@@ -69,7 +70,8 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 
 ## Prochaine étape
 
-**Étape 5** — `js/model/slots.js` (slotDe, slotAvecOverride).
+**Étape 6** — `camera.js`, `decode.js`, `debounce.js` (scan brut).
 Ce qu'elle attend de l'existant :
-- `js/config.js` pour `getConfig()`, `DEFAULTS.DATES`, `H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `TZ_OFFSET_MIN`
+- `js/config.js` pour `getConfig()`, `FREQ_HZ`, `ROI_RATIO`, `DEBOUNCE_MS`
+- `vendor/jsqr.js` pour le fallback de décodage
 - `test/harness.js` pour le lanceur

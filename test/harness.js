@@ -22,25 +22,29 @@ export async function run() {
   running = true;
   passed = 0;
   failed = 0;
-  const out = document.getElementById('test-output') || document.body;
-  let html = '<h2>Tests</h2>';
+  let out;
+  try { out = document.getElementById('test-output') || document.body; } catch {}
 
   for (const t of tests) {
     try {
       const ret = t.fn();
       if (ret instanceof Promise) await ret;
       passed++;
-      html += `<div class="pass">\u2713 ${t.name}</div>`;
+      if (out) out.innerHTML += `<div class="pass">\u2713 ${t.name}</div>`;
+      else console.log(`  \u2713 ${t.name}`);
     } catch (e) {
       failed++;
-      html += `<div class="fail">\u2717 ${t.name}<br><span class="err">${e.message}</span></div>`;
+      const msg = `\u2717 ${t.name} \u2014 ${e.message}`;
+      if (out) out.innerHTML += `<div class="fail">${msg}</div>`;
+      else console.log(`  ${msg}`);
     }
   }
 
   const total = passed + failed;
   const ok = failed === 0;
-  html += `<div class="summary ${ok ? 'pass' : 'fail'}">${passed}/${total} passed${failed ? `, ${failed} failed` : ''}</div>`;
-  out.innerHTML = html;
+  const summary = `${passed}/${total} passed${failed ? `, ${failed} failed` : ''}`;
+  if (out) out.innerHTML += `<div class="summary ${ok ? 'pass' : 'fail'}">${summary}</div>`;
+  else console.log(`---\n${summary}`);
 }
 
 export { passed, failed };
