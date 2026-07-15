@@ -14,7 +14,7 @@
 | 8 | `feedback.js` — Audio + vibration (C7) | `js/feedback.js`, `test/feedback.test.js` | 8/8 | 2026-07-15 |
 | 9 | Écran Scan — UI + sélecteur Auto/Matin/Midi | `js/ui/screen-scan.js`, `test/screen-scan.test.js` | 16 (22 fonctions pures+imports) | 2026-07-15 |
 | 10 | 🔴 `report.js` — etatCellule, stats | `js/model/report.js`, `test/report.test.js` | 18/18 | 2026-07-15 |
-| 11 | Écran Rapport + `@media print` → PDF | `js/ui/screen-report.js`, `css/app.css`, `assets/logos.js`, `test/screen-report.test.js` | 27/27 | 2026-07-15 |
+| 11 | Écran Rapport + `@media print` → PDF | `js/ui/screen-report.js`, `css/app.css`, `assets/logos.js`, `test/screen-report.test.js` | 28/28 (183/183 total) | 2026-07-15 |
 
 ## Décisions prises hors spec
 
@@ -108,8 +108,8 @@ Le format d'heure dans le tableau du rapport suit le document source qui montre 
 ### screenReport synchrone (pas async)
 Contrairement à `screenScan` qui est async (démarrage caméra), `screenReport` n'a aucune opération asynchrone : elle lit les pointages depuis une Map en mémoire et génère du HTML. Décision : fonction synchrone, retourne un contrôleur avec `refresh()`. Si une étape future nécessite de charger des pointages depuis IndexedDB, l'appelant fera l'await avant d'appeler `screenReport`.
 
-### Logos manquants : visuel 3D + QR décoratif
-La spec §10 décrit un visuel 3D + QR décoratif en haut à droite. L'image n'a pas été fournie dans le .docx source. `assets/logos.js` exporte `LOGO_3D = null`. Le rendu ignore ce logo (pas d'élément `<img>` manquant). Si le fichier est fourni plus tard, l'ajouter.
+### Logos extraits du .docx `LISTE DE PRÉSENCE.docx`
+Les 5 logos (LOGO_GREEN, LOGO_ACCA, LOGO_ICON, LOGO_3D, LOGO_QR) ont été extraits du document source et intégrés dans `assets/logos.js`. Le visuel 3D et le QR décoratif ne sont plus manquants. Le tableau du rapport a été réécrit pour matcher la structure 8 colonnes du .docx (N°, THÈMES, LIEU, PERSONNELS, EFFECTIFS, Jour 1-3), avec `colspan="8"` pour l'en-tête direction et `rowspan=16` sur N°/THÈMES/LIEU/EFFECTIFS dans le tbody.
 
 ## Écarts assumés par rapport à la spec
 
@@ -132,9 +132,9 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 - `screen-scan.js` : les tests DOM (structure, bouton, sélecteur) ne tournent qu'au navigateur (manque `document.createElement` en Node). Les 4 tests P2/P3/P15/P16 ne peuvent pas être vérifiés en CLI — seulement via `http://localhost:8000/test/index.html`.
 - `report.js` : `cle()` est une fonction privée (non exportée) dupliquée de `pipeline.js` — les deux construisent la même clé `"id|date|creneau"`. Si une refactor future exporte `cle()` d'un module commun, les deux appels devront être mis à jour simultanément.
 - `report.js` : `finDe` calcule la fin de matin à H_BASCULE et midi à H_FIN_MIDI. Si une étape future ajoute un créneau (ex. `soir`), `finDe` et `slotsEchus` devront être adaptées.
-- `assets/logos.js` : `LOGO_3D = null` (visuel 3D + QR décoratif non fourni). Ajouter l'image base64 si elle est extraite du .docx.
+- `assets/logos.js` : les 5 logos sont extraits du .docx. `LOGO_ICON` (décorateur) n'est pas utilisé dans le rapport actuel — réservé pour un usage futur.
 - `screen-report.js` : `formatTau` dupliqué depuis `screen-scan.js` avec un séparateur "h" au lieu de ":". Si une refactor future centralise les formats, rapprocher les deux.
-- `screen-report.js` : le choix portrait/paysage n'a pas été mesuré sur impression réelle. Vérifier sur une vraie imprimante avant le jour J. Si ça ne tient pas, ajouter une classe `.landscape` et changer `@page`.
+- `screen-report.js` : le choix portrait/paysage n'a pas été mesuré sur impression réelle. Le tableau est passé de 11 à 8 colonnes, ce qui réduit la largeur nécessaire. Vérifier sur une vraie imprimante avant le jour J. Si ça ne tient pas, ajouter une classe `.landscape` et changer `@page`.
 - `css/app.css` : les écrans autres que le rapport (scan, liste) n'ont pas encore de styles. Le fichier ne contient que les styles du rapport.
 
 ## Pièges rencontrés
@@ -160,10 +160,11 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 ## Prochaine étape
 
 **Étape 12** — `badges.js` — planche A4 de 16 QR en version 1-Q.
+[Pas encore commencée]
 Ce qu'elle attend de l'existant :
 - `ident.js` (`payload()`, `idDe()`, `CHECKSUMS`) pour les données des badges
 - `data.js` (`PARTICIPANTS`) pour les 16 noms
 - `config.js` (`getConfig()` → `QR_EC`, `PREFIXE_ID`, `BADGES_PAR_PAGE`) pour les réglages QR
-- `vendor/qrcode.js` (génération QR, à vendoriser)
+- `vendor/qrcode.js` (génération QR, à vendoriser — pas encore créé)
 - `css/app.css` (les styles `@media print` existent déjà depuis l'étape 11)
 - Pas besoin de : `store.js`, `camera.js`, `pipeline.js`, `feedback.js`, `screen-scan.js`, `screen-report.js`, `report.js`, `lattice.js`, `slots.js`, `norm.js`
