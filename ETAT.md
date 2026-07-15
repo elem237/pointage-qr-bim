@@ -11,6 +11,7 @@
 | 5 | `slots.js` — slotDe, slotAvecOverride | `js/model/slots.js`, `test/slots.test.js` | 13/13 | 2026-07-15 |
 | 6 | `camera.js`, `decode.js`, `debounce.js` (scan brut) | `vendor/jsqr.js`, `js/scan/camera.js`, `js/scan/decode.js`, `js/scan/debounce.js`, `test/scan.test.js` | 12/12 | 2026-07-15 |
 | 7 | 🔴 `pipeline.js` — `Scan()` | `js/scan/pipeline.js`, `test/pipeline.test.js`, `test/index.html` | 9/9 | 2026-07-15 |
+| 8 | `feedback.js` — Audio + vibration (C7) | `js/feedback.js`, `test/feedback.test.js` | 8/8 | 2026-07-15 |
 
 ## Décisions prises hors spec
 
@@ -59,6 +60,15 @@ La spec §7 montre `w ← decode(roi(image))` — `roi()` fait partie du pseudo-
 ### `cle` construite inline dans Scan (pas de fonction dédiée)
 La spéciﬁcation formelle note `cle(w.id, s)` pour la clé de pointage, mais aucune fonction `cle()` n'est définie dans les modules du §2. La clé `"BIM26-{d}|{date}|{creneau}"` est donc construite inline dans pipeline.js par extraction regex du `w` (garanti valide par `valider`). Si une session future exporte `cle()` depuis `ident.js` ou ailleurs, le code pourra être refactoré.
 
+### `feedback.js` ne gère que Son + Vibration, pas Couleur + Message
+La spec §8 (Module C7) donne un tableau à 5 colonnes (Son, Vibration, Couleur, Message). Mais l'étape 8 du §12 est intitulée « Audio + vibration (C7) » et l'étape 9 (« Écran Scan ») gère l'UI. Décision : `feedback.js` se limite au retour non-visuel (son + vibration). Couleur et message texte seront affichés par `screen-scan.js` à l'étape 9. Si une session future veut centraliser, `feedback.js` peut exporter un dictionnaire supplémentaire.
+
+### Gap de 100ms entre les deux tones DEJA_POINTE
+La spec dit « 660 Hz ×2, 80 ms » sans préciser l'intervalle. Choix : délai de 180ms pour le second tone (gap de 100ms entre la fin du premier tone et le début du second). La vibration suit un pattern `[30, 100, 30]` (gap cohérent de 100ms).
+
+### `initAudio()` protégée contre l'absence de `window` en Node
+`window` n'existe pas en Node → `window.AudioContext` lève ReferenceError. Décision : ajouter `typeof window !== 'undefined' &&` en garde. Même motif que `vibrer()` qui protège `typeof navigator`.
+
 ## Écarts assumés par rapport à la spec
 
 ### `norm()` — remplacement des apostrophes courbes (§5 A1)
@@ -92,12 +102,17 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 10. **`replaceAll` sur `s.reg(` crée des doubles `await`.** En faisant `replaceAll("s.reg(", "await s.reg(")`, une ligne déjà `await s.reg(` devient `await await s.reg(`. Solution : vérifier le fichier après remplacement global.
 11. **Conversion UMD → ES module pour jsQR.** Le fichier jsQR est 10102 lignes. Le convertir demande de modifier la ligne 1 (supprimer le wrapper UMD) et la toute dernière ligne (ajouter `export default`). Le webpack bootstrap doit être exécuté et son résultat exporté : `const _jsQR = (function() { … })(); export default _jsQR;`. Ne pas toucher aux modules webpack internes.
 12. **Tests de décodage et caméra impossible en Node.** `ImageData`, `navigator.mediaDevices.getUserMedia`, `BarcodeDetector` sont des API navigateur. Les tests C2/C1 de l'étape 6 ne tournent pas en Node — seulement le navigateur ou un test unitaire partiel (debounce uniquement). Pour une CI sans navigateur, la sortie Node des 7 tests debounce + 2 tests d'existence d'export est la meilleure approximation.
+13. **`window` non défini en Node → ReferenceError.** En écrivant `window.AudioContext` dans `initAudio()`, le module planta en Node (test line). Solution : `typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)`.
+14. **`globalThis.navigator` en Node est un getter read-only.** Impossible de l'assigner directement pour mocker `navigator.vibrate`. Solution : `Object.defineProperty(globalThis, 'navigator', { configurable: true, get: () => ({ vibrate: fn }) })`.
 
 ## Prochaine étape
 
-**Étape 8** — `feedback.js` — Audio + vibration (C7).
+**Étape 9** — Écran Scan — UI + sélecteur Auto/Matin/Midi.
 Ce qu'elle attend de l'existant :
-- Les types de résultat de `Scan()` (5 branches) pour mapper son/signal/couleur
-- `js/config.js` pour des constantes éventuelles (fréquences)
-- `test/harness.js` pour le lanceur
-- ⚠️ Nécessite un vrai iPhone pour tester le déblocage de l'`AudioContext`
+- `feedback.js` (cette étape) pour déclencher son + vibration
+- `pipeline.js` (`Scan()`) pour la logique de pointage
+- `camera.js` pour la boucle vidéo
+- `store.js` pour la persistance
+- `config.js` pour les constantes
+- `initAudio()` doit être appelée depuis un clic (contournement iOS)
+- `screen-scan.js` à créer dans `js/ui/`
