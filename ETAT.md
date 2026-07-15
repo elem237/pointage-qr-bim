@@ -9,6 +9,7 @@
 | 3 | 🔴 `lattice.js` — rang, join, fusion | `js/model/lattice.js`, `test/lattice.test.js` | 17/17 | 2026-07-15 |
 | 4 | 🔴 `store.js` — IndexedDB, reg, cancel | `js/db/store.js`, `test/store.test.js` | 22/22 | 2026-07-15 |
 | 5 | `slots.js` — slotDe, slotAvecOverride | `js/model/slots.js`, `test/slots.test.js` | 13/13 | 2026-07-15 |
+| 6 | `camera.js`, `decode.js`, `debounce.js` (scan brut) | `vendor/jsqr.js`, `js/scan/camera.js`, `js/scan/decode.js`, `js/scan/debounce.js`, `test/scan.test.js` | 12/12 | 2026-07-15 |
 
 ## Décisions prises hors spec
 
@@ -39,6 +40,15 @@ La spec §6.3 dit `retourner { m, DEJA_POINTE(v.tau) }` — le Map modifié est 
 ### `valider` hardcode `'BIM26-'` dans la REGEX
 La spec §A4 donne `REGEX = /^BIM26-([0-9]{3})-([A-Z2-7]{2})$/`. Idem pour `id = 'BIM26-' + m[1]`. Ce n'est PAS paramétré par `PREFIXE_ID`. Raison : si PREFIXE_ID change, le format QR change, et la REGEX doit être réécrite de toute façon — ce n'est pas un réglage runtime. Décision : suivre la spec à la lettre, hardcoder.
 
+### jsQR converti de UMD → ES module (vendor/jsqr.js)
+Le fichier téléchargé est un UMD webpack. Pour l'importer depuis `decode.js` en module ES natif, le wrapper UMD a été remplacé par `const _jsQR = (function() { … })(); export default _jsQR;`. Alternative (chargement via `<script>` HTML) aurait cassé la régularité du système de modules. Décision : conversion à la ligne 1 (suppression du wrapper) et ligne 10101 (ajout de l'export).
+
+### `retenir` hardcode 3000 ms (pas `DEBOUNCE_MS`)
+La spec §C4 donne la pseudo-code avec `3000` littéral, pas `getConfig().DEBOUNCE_MS`. Suivi la spec à la lettre. Si pipeline.js (étape 7) a besoin d'un seuil configurable, `retenir` prendra un paramètre supplémentaire.
+
+### Geler la boucle : freeze() externe via le contrôleur
+La spec §C1 dit « Geler la boucle pendant l'affichage du résultat (300 ms) ». `lancerBoucle` retourne un contrôleur avec `freeze(ms)` appelable par pipeline.js. Décision : ne pas coder le gel dans la boucle elle-même — pipeline.js décide quand geler (après un scan réussi).
+
 ## Écarts assumés par rapport à la spec
 
 ### `norm()` — remplacement des apostrophes courbes (§5 A1)
@@ -48,12 +58,13 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 
 ## Dettes / TODO laissés derrière
 
-- Aucun pour l'étape 1.
 - `hydrateConfig()` sera appelée par `main.js` (étape 9, écran Scan) — pour l'instant `_overrides` reste vide.
 - `precalcChecksums()` sera appelée par `main.js` (étape 9) — pour l'instant les tests l'appellent manuellement.
 - `js/model/lattice.js` référence `@typedef {import('../data.js').PointageValue}` mais `PointageValue` n'est défini nulle part en JSDoc (la spec §4.2 le donne en commentaire uniquement). Sans conséquence runtime, mais un `@typedef` dans `data.js` serait bien.
 - `store.js` importe `getConfig()` (dépendance déclarée) mais ne l'utilise pas encore — nécessaire pour `reg` si `DEFAULTS` influence le comportement plus tard.
 - `deletePointage()` dans `store.js` est exporté inutilisé — réservé pour l'étape 13+ (écran Liste, reset de pointage).
+- `camera.js` importe `getConfig()` mais les tests Node ne peuvent pas vérifier `captureROI` et `lancerBoucle` (manque DOM/getUserMedia). Vérification uniquement du typage des exports.
+- `decode.js` n'est pas testable en Node — `ImageData` inexistant, `BarcodeDetector` inexistant. Le test `decode(bruit) → null` ne tourne que dans un navigateur.
 
 ## Pièges rencontrés
 
@@ -67,11 +78,19 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 8. **IndexedDB : fermeture avant fin de transaction.** `reg` et `cancel` écrivent en IndexedDB. Si on ferme la DB (`close()`) avant la fin de la transaction, l'écriture est perdue. Solution : `await` systématique des appels à `savePointage()` dans `reg`/`cancel`, et `await store.reg(...)` avant `store.close()`.
 9. **Noms de base uniques par test.** Les tests de persistance ouvrent/ferment/ré-ouvrent la même base. Si deux tests partagent le même nom de base, l'état IndexedDB peut contaminer l'autre test. Solution : chaque test génère un nom unique (`bim-test-{timestamp}-{random}`) et le supprime en sortie.
 10. **`replaceAll` sur `s.reg(` crée des doubles `await`.** En faisant `replaceAll("s.reg(", "await s.reg(")`, une ligne déjà `await s.reg(` devient `await await s.reg(`. Solution : vérifier le fichier après remplacement global.
+11. **Conversion UMD → ES module pour jsQR.** Le fichier jsQR est 10102 lignes. Le convertir demande de modifier la ligne 1 (supprimer le wrapper UMD) et la toute dernière ligne (ajouter `export default`). Le webpack bootstrap doit être exécuté et son résultat exporté : `const _jsQR = (function() { … })(); export default _jsQR;`. Ne pas toucher aux modules webpack internes.
+12. **Tests de décodage et caméra impossible en Node.** `ImageData`, `navigator.mediaDevices.getUserMedia`, `BarcodeDetector` sont des API navigateur. Les tests C2/C1 de l'étape 6 ne tournent pas en Node — seulement le navigateur ou un test unitaire partiel (debounce uniquement). Pour une CI sans navigateur, la sortie Node des 7 tests debounce + 2 tests d'existence d'export est la meilleure approximation.
 
 ## Prochaine étape
 
-**Étape 6** — `camera.js`, `decode.js`, `debounce.js` (scan brut).
+**Étape 7** — 🔴 `pipeline.js` — `Scan()` de bout en bout.
 Ce qu'elle attend de l'existant :
-- `js/config.js` pour `getConfig()`, `FREQ_HZ`, `ROI_RATIO`, `DEBOUNCE_MS`
+- `js/config.js` pour `getConfig()`
+- `js/data.js` pour `PARTICIPANTS`
+- `js/model/ident.js` pour `valider`, `cle` (extraire cle depuis id + date + creneau)
+- `js/model/slots.js` pour `slotAvecOverride`
+- `js/scan/decode.js` pour `decode`
+- `js/scan/debounce.js` pour `retenir`
+- `js/db/store.js` pour `reg` (via Store)
 - `vendor/jsqr.js` pour le fallback de décodage
 - `test/harness.js` pour le lanceur
