@@ -4,7 +4,8 @@
 
 | # | Étape | Fichiers | Tests | Date |
 |---|---|---|---|---|
-| 1 | config.js, data.js, norm.js + harnais | `js/config.js`, `js/data.js`, `js/model/norm.js`, `test/index.html`, `test/harness.js`, `test/norm.test.js`, `test/data.test.js`, `test/config.test.js` | 16/16 | 2026-07-15 |
+| 1 | `config.js`, `data.js`, `norm.js` + harnais | `js/config.js`, `js/data.js`, `js/model/norm.js`, `test/index.html`, `test/harness.js`, `test/norm.test.js`, `test/data.test.js`, `test/config.test.js` | 16/16 | 2026-07-15 |
+| 2 | `ident.js` (A2, A3, A4) 🔴 — payload + valider | `js/model/ident.js`, `test/ident.test.js` | 33/33 | 2026-07-15 |
 
 ## Décisions prises hors spec
 
@@ -22,6 +23,13 @@ La spec §2 disait « ouvrable au navigateur ». En réalité, les modules ES en
 ### `test/run.mjs` hors spec
 Fichier utilitaire créé pour exécuter les tests en ligne de commande (sortie plus rapide que le navigateur). Non listé dans l'arborescence §2. Supprimé avant commit. Peut être recréé au besoin.
 
+### `precalcChecksums()` appelée explicitement (pas à l'import)
+La spec §A3 dit « Pré-calculer les 16 checksums au démarrage dans une Map ». Suivant le même pattern que `hydrateConfig()` (config.js), `precalcChecksums()` est une fonction exportée appelée explicitement par les tests (et plus tard par `main.js`). Elle n'est PAS appelée automatiquement à l'import du module — ce serait un side-effect caché hors de contrôle.
+Conséquence pour le test : chaque test qui utilise `valider` appelle `await precalcChecksums()` d'abord.
+
+### `valider` hardcode `'BIM26-'` dans la REGEX
+La spec §A4 donne `REGEX = /^BIM26-([0-9]{3})-([A-Z2-7]{2})$/`. Idem pour `id = 'BIM26-' + m[1]`. Ce n'est PAS paramétré par `PREFIXE_ID`. Raison : si PREFIXE_ID change, le format QR change, et la REGEX doit être réécrite de toute façon — ce n'est pas un réglage runtime. Décision : suivre la spec à la lettre, hardcoder.
+
 ## Écarts assumés par rapport à la spec
 
 ### `norm()` — remplacement des apostrophes courbes (§5 A1)
@@ -33,6 +41,7 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 
 - Aucun pour l'étape 1.
 - `hydrateConfig()` sera appelée par `main.js` à l'étape 4 — pour l'instant `_overrides` reste vide.
+- `precalcChecksums()` sera appelée par `main.js` à l'étape 4 — pour l'instant les tests l'appellent manuellement.
 
 ## Pièges rencontrés
 
@@ -40,11 +49,14 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 2. **`file://` et modules ES.** Les tests ne s'ouvrent pas en `file://` — toujours utiliser le serveur HTTP Python. Ne pas perdre de temps à debugger CORS en local.
 3. **Node.js et imports ESM `.js`.** Node requiert un `package.json` avec `"type":"module"` pour importer des fichiers `.js` contenant des `export`/`import`. Sans ça, tout est traité en CJS. La façon la plus propre est de créer `package.json` temporairement pour les runs CLI, ou d'utiliser le navigateur.
 4. **`Object.freeze` est superficiel.** `DEFAULTS.DATES` est un tableau gelé en référence, mais ses éléments ne le sont pas. Pour l'étape 1, c'est suffisant car `DATES` n'est jamais modifié.
+5. **`crypto.subtle.digest` est async.** `checksum` et `payload` retournent des Promises. `valider` reste synchrone car elle lit `CHECKSUMS` pré-calculée. Ne pas oublier d'`await` les appels à `payload` ou `checksum` dans les étapes suivantes.
+6. **Base32 alphabet.** L'alphabet de la spec est `"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"` (RFC 4648, sans padding). Attention à ne pas utiliser un alphabet Base32 URL-safe ou hex qui changerait les checksums et invaliderait tous les badges imprimés.
+7. **Taux de détection probabiliste.** Le test « faux positifs < 20 sur 10⁴ » peut techniquement échouer une fois sur des millions de runs (probabilité ~10⁻¹⁶). Si ça arrive, relancer.
 
 ## Prochaine étape
 
-**Étape 2** — `js/model/ident.js` (A2, A3, A4) : payload + valider.
+**Étape 3** 🔴 — `js/model/lattice.js` (rang, join, fusion).
 Ce qu'elle attend de l'existant :
-- `js/config.js` pour `DEFAULTS.PREFIXE_ID`, `DEFAULTS.SEL`
-- `js/data.js` pour `PARTICIPANTS`
+- `js/data.js` pour `PARTICIPANTS` (utilisé indirectement via les clés)
+- `js/model/ident.js` pour `idDe()` et `IDS_CONNUS` (pour générer les clés de test)
 - `test/harness.js` pour le lanceur
