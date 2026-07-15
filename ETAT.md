@@ -13,6 +13,7 @@
 | 7 | 🔴 `pipeline.js` — `Scan()` | `js/scan/pipeline.js`, `test/pipeline.test.js`, `test/index.html` | 9/9 | 2026-07-15 |
 | 8 | `feedback.js` — Audio + vibration (C7) | `js/feedback.js`, `test/feedback.test.js` | 8/8 | 2026-07-15 |
 | 9 | Écran Scan — UI + sélecteur Auto/Matin/Midi | `js/ui/screen-scan.js`, `test/screen-scan.test.js` | 16 (22 fonctions pures+imports) | 2026-07-15 |
+| 10 | 🔴 `report.js` — etatCellule, stats | `js/model/report.js`, `test/report.test.js` | 18/18 | 2026-07-15 |
 
 ## Décisions prises hors spec
 
@@ -85,6 +86,18 @@ Pour afficher « déjà pointé à HH:MM », `formatTau()` ajoute 3600000 ms à 
 ### Overlay résultat en `position:absolute` en bas
 La spec ne précise pas le placement du message de résultat. Choix : overlay positionné en bas de l'écran (`bottom:0`), semi-transparent si fond, pour ne pas masquer le flux caméra. Le sélecteur Auto/Matin/Midi est en haut. Le flux vidéo est en `display:block` derrière.
 
+### `finDe()` définie dans `report.js`, pas dans `slots.js`
+La spec §E1 mentionne `finDe(s)` sans préciser son module. Nécessaire à `etatCellule` et `slotsEchus`, toutes deux dans `report.js`. La mettre dans `slots.js` aurait modifié un module existant hors étape. Décision : définir `finDe` dans `report.js`. Si une étape future en a besoin ailleurs, extraire.
+
+### Signature `etatCellule(m, participant, slot, tNow)`
+La spec donne `(participant, slot, tNow)` mais le pseudo-code lit `m.get(...)`. Puisque `report.js` est un module pur, `m` est un paramètre (comme `reg(m, ...)` dans lattice.js). Décision : `m` en premier paramètre, `participant`, `slot`, `tNow` ensuite.
+
+### `presents` implémentation directe (pas via `etatCellule`)
+La spec définit `presents(s) = |{ p : etatCellule(p,s).type = 'present' }|`. L'implémentation itère directement sur `m.get(cle(numero, slot))` au lieu d'appeler `etatCellule` 16 fois avec un `tNow` factice. Même résultat, évite de passer `Infinity` comme tNow.
+
+### E3 (tri) laissé à l'étape 11
+La spec §E3 décrit les tris mais l'étape 10 livre seulement `etatCellule` et `stats`. `PARTICIPANTS` est déjà ordonné par `numero` en lecture. Les tris alphabétique/assiduité sont réservés à l'écran de consultation (`screen-report.js`, étape 11+). Aucune fonction de tri exportée de `report.js`.
+
 ## Écarts assumés par rapport à la spec
 
 ### `norm()` — remplacement des apostrophes courbes (§5 A1)
@@ -104,6 +117,8 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 - `pipeline.js` branche 1 (decode réel + ImageData noise) ne tourne qu'au navigateur. Les branches 2-5 utilisent `_decode` injectable, testables en Node.
 - `pipeline.js` n'appelle pas `roi()` — cohérent avec le fait que `camera.js` livre déjà l'ImageData rogné. Si l'étape 9 ou 13 appelle `Scan()` sans passer par `camera.js`, l'image ne sera pas rognée. Ce n'est pas un bug tant que l'appelant applique ROI avant.
 - `screen-scan.js` : les tests DOM (structure, bouton, sélecteur) ne tournent qu'au navigateur (manque `document.createElement` en Node). Les 4 tests P2/P3/P15/P16 ne peuvent pas être vérifiés en CLI — seulement via `http://localhost:8000/test/index.html`.
+- `report.js` : `cle()` est une fonction privée (non exportée) dupliquée de `pipeline.js` — les deux construisent la même clé `"id|date|creneau"`. Si une refactor future exporte `cle()` d'un module commun, les deux appels devront être mis à jour simultanément.
+- `report.js` : `finDe` calcule la fin de matin à H_BASCULE et midi à H_FIN_MIDI. Si une étape future ajoute un créneau (ex. `soir`), `finDe` et `slotsEchus` devront être adaptées.
 
 ## Pièges rencontrés
 
@@ -124,12 +139,13 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 
 ## Prochaine étape
 
-**Étape 10** — 🔴 `report.js` — etatCellule, stats.
+**Étape 11** — Écran Rapport + `@media print` → PDF.
 Ce qu'elle attend de l'existant :
-- `lattice.js` (`join`, `fusion`) pour le treillis
-- `store.js` (`getPointages()`) pour lire les pointages
+- `report.js` (`etatCellule`, `presents`, `taux`, `theta`, `finDe`, `slotsEchus`) pour les données du rapport
+- `config.js` (`getConfig()` → toutes les constantes) pour l'en-tête
+- `data.js` (`PARTICIPANTS`) pour les 16 lignes
 - `slots.js` (`slotDe`) pour les créneaux
 - `ident.js` (`idDe`) pour les ids
-- `config.js` (`getConfig()` → `DATES`, `H_*`) pour les constantes
-- `screen-scan.js`, `camera.js`, `pipeline.js` ne sont pas nécessaires (report est un module pur)
-- Module marqué 🔴 : écrire les tests AVANT le code.
+- `assets/logos.js` (base64) pour les logos d'en-tête
+- `lattice.js` n'est pas nécessaire directement (report.js fait le lien)
+- `store.js`, `camera.js`, `pipeline.js`, `feedback.js`, `screen-scan.js` ne sont pas nécessaires — l'écran Rapport est une page statique générée depuis les pointages en mémoire.
