@@ -7,6 +7,7 @@
 | 1 | `config.js`, `data.js`, `norm.js` + harnais | `js/config.js`, `js/data.js`, `js/model/norm.js`, `test/index.html`, `test/harness.js`, `test/norm.test.js`, `test/data.test.js`, `test/config.test.js` | 16/16 | 2026-07-15 |
 | 2 | `ident.js` (A2, A3, A4) 🔴 — payload + valider | `js/model/ident.js`, `test/ident.test.js` | 33/33 | 2026-07-15 |
 | 3 | 🔴 `lattice.js` — rang, join, fusion | `js/model/lattice.js`, `test/lattice.test.js` | 17/17 | 2026-07-15 |
+| 4 | 🔴 `store.js` — IndexedDB, reg, cancel | `js/db/store.js`, `test/store.test.js` | 22/22 | 2026-07-15 |
 
 ## Décisions prises hors spec
 
@@ -28,6 +29,12 @@ Fichier utilitaire créé pour exécuter les tests en ligne de commande (sortie 
 La spec §A3 dit « Pré-calculer les 16 checksums au démarrage dans une Map ». Suivant le même pattern que `hydrateConfig()` (config.js), `precalcChecksums()` est une fonction exportée appelée explicitement par les tests (et plus tard par `main.js`). Elle n'est PAS appelée automatiquement à l'import du module — ce serait un side-effect caché hors de contrôle.
 Conséquence pour le test : chaque test qui utilise `valider` appelle `await precalcChecksums()` d'abord.
 
+### `store.reg` et `store.cancel` sont async (persistance IndexedDB)
+La spec §6.3/§6.4 décrit `reg` et `cancel` comme des fonctions pures synchrones sur une `Map<Cle, PointageValue>`. Mais `store.js` doit persister en IndexedDB (API asynchrone). Décision : les méthodes du Store sont `async` ; la sauvegarde DB est `await`-ée avant le retour. La garantie de durabilité prime sur la pureté.
+
+### Le Store encapsule la Map (pas de retour de `m` dans les résultats)
+La spec §6.3 dit `retourner { m, DEJA_POINTE(v.tau) }` — le Map modifié est dans le résultat. Le Store possède la Map en interne et expose `getPointages()` pour y accéder. Les résultats de `reg`/`cancel` ne contiennent pas la Map — seulement le statut (`OK`/`DEJA_POINTE`/`ERREUR`) et les payloads (participant, tau). Si pipeline.js (étape 7) a besoin de la pure fonction, elle sera extraite à ce moment-là.
+
 ### `valider` hardcode `'BIM26-'` dans la REGEX
 La spec §A4 donne `REGEX = /^BIM26-([0-9]{3})-([A-Z2-7]{2})$/`. Idem pour `id = 'BIM26-' + m[1]`. Ce n'est PAS paramétré par `PREFIXE_ID`. Raison : si PREFIXE_ID change, le format QR change, et la REGEX doit être réécrite de toute façon — ce n'est pas un réglage runtime. Décision : suivre la spec à la lettre, hardcoder.
 
@@ -41,9 +48,11 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 ## Dettes / TODO laissés derrière
 
 - Aucun pour l'étape 1.
-- `hydrateConfig()` sera appelée par `main.js` à l'étape 4 — pour l'instant `_overrides` reste vide.
-- `precalcChecksums()` sera appelée par `main.js` à l'étape 4 — pour l'instant les tests l'appellent manuellement.
+- `hydrateConfig()` sera appelée par `main.js` (étape 9, écran Scan) — pour l'instant `_overrides` reste vide.
+- `precalcChecksums()` sera appelée par `main.js` (étape 9) — pour l'instant les tests l'appellent manuellement.
 - `js/model/lattice.js` référence `@typedef {import('../data.js').PointageValue}` mais `PointageValue` n'est défini nulle part en JSDoc (la spec §4.2 le donne en commentaire uniquement). Sans conséquence runtime, mais un `@typedef` dans `data.js` serait bien.
+- `store.js` importe `getConfig()` (dépendance déclarée) mais ne l'utilise pas encore — nécessaire pour `reg` si `DEFAULTS` influence le comportement plus tard.
+- `deletePointage()` dans `store.js` est exporté inutilisé — réservé pour l'étape 5+ (reset de pointage).
 
 ## Pièges rencontrés
 
@@ -54,13 +63,13 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 5. **`crypto.subtle.digest` est async.** `checksum` et `payload` retournent des Promises. `valider` reste synchrone car elle lit `CHECKSUMS` pré-calculée. Ne pas oublier d'`await` les appels à `payload` ou `checksum` dans les étapes suivantes.
 6. **Base32 alphabet.** L'alphabet de la spec est `"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"` (RFC 4648, sans padding). Attention à ne pas utiliser un alphabet Base32 URL-safe ou hex qui changerait les checksums et invaliderait tous les badges imprimés.
 7. **Taux de détection probabiliste.** Le test « faux positifs < 20 sur 10⁴ » peut techniquement échouer une fois sur des millions de runs (probabilité ~10⁻¹⁶). Si ça arrive, relancer.
+8. **IndexedDB : fermeture avant fin de transaction.** `reg` et `cancel` écrivent en IndexedDB. Si on ferme la DB (`close()`) avant la fin de la transaction, l'écriture est perdue. Solution : `await` systématique des appels à `savePointage()` dans `reg`/`cancel`, et `await store.reg(...)` avant `store.close()`.
+9. **Noms de base uniques par test.** Les tests de persistance ouvrent/ferment/ré-ouvrent la même base. Si deux tests partagent le même nom de base, l'état IndexedDB peut contaminer l'autre test. Solution : chaque test génère un nom unique (`bim-test-{timestamp}-{random}`) et le supprime en sortie.
+10. **`replaceAll` sur `s.reg(` crée des doubles `await`.** En faisant `replaceAll("s.reg(", "await s.reg(")`, une ligne déjà `await s.reg(` devient `await await s.reg(`. Solution : vérifier le fichier après remplacement global.
 
 ## Prochaine étape
 
-**Étape 4** 🔴 — `js/db/store.js` (IndexedDB, reg, cancel).
+**Étape 5** — `js/model/slots.js` (slotDe, slotAvecOverride).
 Ce qu'elle attend de l'existant :
-- `js/config.js` pour `DEFAULTS` et `getConfig()`
-- `js/data.js` pour `PARTICIPANTS`
-- `js/model/ident.js` pour `idDe()`, `IDS_CONNUS`
-- `js/model/lattice.js` pour `join`, `fusion`
+- `js/config.js` pour `getConfig()`, `DEFAULTS.DATES`, `H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `TZ_OFFSET_MIN`
 - `test/harness.js` pour le lanceur
