@@ -234,7 +234,7 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 - ⚠️ Test physique badges : imprimer `http://localhost:8000/test/badges-print.html`, découper, scanner avec l'app
 - ⚠️ Test physique rapport : imprimer sur imprimante réelle, mesurer les largeurs
 - ⚠️ Test physique PWA : mode avion, installation Android/iOS
-- `main.js` (routeur d'écrans, câblage des 4 écrans)
+- ✅ `main.js` — routeur 4 écrans (Scan, Rapport, Liste, Réglages) + barre de navigation
 - `store.clearAll()` + 6 champs modifiables dans screen-setup.js
 - ✅ Déploiement HTTPS — `netlify.toml` créé (headers MIME, SW, sécurité, redirect SPA)
 - ⚠️ Installation Android/iOS depuis Netlify/GitHub Pages

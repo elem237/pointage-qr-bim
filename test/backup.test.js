@@ -106,3 +106,15 @@ test('G10 — exportLe est conservé', () => {
   assert(typeof data.exportLe === 'number', 'exportLe est un nombre');
   assert(data.exportLe > 1720000000000, 'exportLe est récent');
 });
+
+/* ── G11 — deserialiser rejette les pointages sans mode/device/override 🔴 ── */
+test('G11 — deserialiser rejette PointageValue sans mode/device/override', () => {
+  const incomplet = JSON.stringify({
+    version: 2,
+    participants: [{ numero: 1, nomComplet: "Test" }],
+    pointages: [["BIM26-001|2026-08-04|matin", { generation: 0, statut: 'actif', tau: 1000 }]],
+    exportLe: Date.now()
+  });
+  const r = deserialiser(incomplet);
+  assertEq(r, null, 'doit rejeter un PointageValue sans mode/device/override');
+});

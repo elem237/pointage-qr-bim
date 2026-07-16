@@ -1,7 +1,6 @@
 const CACHE = 'bim-v1';
 
 const ASSETS = [
-  './',
   './index.html',
   './manifest.webmanifest',
   './css/app.css',
@@ -48,13 +47,19 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      caches.match('./index.html').then(cached => cached || fetch(event.request))
-    );
-    return;
-  }
   event.respondWith(
-    caches.match(event.request).then(cached => (cached || fetch(event.request)))
+    (async () => {
+      if (event.request.mode === 'navigate') {
+        const index = await caches.match('/index.html');
+        if (index) return index;
+        try { return await fetch(event.request); } catch(_) {}
+        return new Response('Hors ligne', { status: 503 });
+      }
+      const cached = await caches.match(event.request);
+      if (cached) return cached;
+      try { return await fetch(event.request); } catch(_) {
+        return new Response('Hors ligne', { status: 503 });
+      }
+    })()
   );
 });
