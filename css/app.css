@@ -99,3 +99,13 @@ tr.p  { height: 8.78mm; }
 }
 #screen-setup .danger { background: #c00; color: #fff; border: none; padding: 0.5em 1em; font-weight: bold; cursor: pointer; }
 #screen-setup .danger:disabled { background: #ccc; cursor: not-allowed; }
+
+/* ── Navigation ── */
+#app-root { font-family: sans-serif; }
+#nav-bar { display: flex; background: #006633; position: sticky; top: 0; z-index: 100; }
+.nav-btn {
+  flex: 1; padding: 10px 4px; border: none; background: transparent;
+  color: #ccc; font-size: 13px; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.nav-btn:hover { background: #008844; color: #fff; }
+.nav-btn:active, .nav-btn:focus { outline: none; }
