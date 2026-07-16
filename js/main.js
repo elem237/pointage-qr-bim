@@ -10,6 +10,26 @@ let _store = null;
 let _currentScreen = null;
 let _screenCtrl = null;
 
+function dateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+function autoModeTest() {
+  const cfg = getConfig();
+  const t = new Date();
+  const ts = dateStr(t);
+  if (cfg.DATES.includes(ts)) return;
+  const dates = [
+    ts,
+    dateStr(new Date(t.getTime() + 864e5)),
+    dateStr(new Date(t.getTime() + 2 * 864e5)),
+  ];
+  mergeConfig({ DATES: dates });
+}
+
 function montrerScreen(nom) {
   if (_currentScreen === nom) return;
   if (_screenCtrl && typeof _screenCtrl.arreterScan === 'function') {
@@ -52,6 +72,7 @@ function montrerScreen(nom) {
 
 async function main() {
   hydrateConfig({});
+  autoModeTest();
   await precalcChecksums();
   try {
     _store = await initDB();
