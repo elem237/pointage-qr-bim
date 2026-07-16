@@ -19,6 +19,7 @@
 | 13 | `badges.js` — planche A4 de 16 QR version 1-Q | `vendor/qrcode.js`, `js/badges.js`, `css/app.css`, `test/badges.test.js`, `test/badges-print.html`, `test/index.html` | 12/12 + scan physique BIM26-001-YJ ✅ | claude-opus-4-8 | 2026-07-16 |
 | 14 | Écran Liste + import/export (§9 D1–D4, §6.5) | `js/ui/screen-list.js`, `js/db/backup.js`, `js/db/store.js` (+loadAllPointages), `test/backup.test.js`, `test/screen-list.test.js`, `test/index.html` | 234/234 (10 backup + 15 screen-list) | — | 2026-07-16 |
 | 15 | 🔴 `sw.js`, `manifest` — PWA (cache-first, addAll) | `sw.js`, `manifest.webmanifest`, `index.html`, `js/main.js`, `assets/icon-192.png`, `assets/icon-512.png`, `test/pwa.test.js` | 9 tests 🔴 (statique ✓, navigateur nécessaire) | — | 2026-07-16 |
+| 16 | Déploiement + install | `netlify.toml`, `test/deploy.test.js` | 9/9 (deploy config) | — | 2026-07-16 |
  
 ---
 
@@ -235,4 +236,5 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 - ⚠️ Test physique PWA : mode avion, installation Android/iOS
 - `main.js` (routeur d'écrans, câblage des 4 écrans)
 - `store.clearAll()` + 6 champs modifiables dans screen-setup.js
-- Déploiement HTTPS (Netlify/GitHub Pages) + installation Android/iOS
+- ✅ Déploiement HTTPS — `netlify.toml` créé (headers MIME, SW, sécurité, redirect SPA)
+- ⚠️ Installation Android/iOS depuis Netlify/GitHub Pages
