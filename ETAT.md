@@ -2,185 +2,199 @@
 
 ## Étapes terminées
 
-| # | Étape | Fichiers | Tests | Date |
-|---|---|---|---|---|
-| 1 | `config.js`, `data.js`, `norm.js` + harnais | `js/config.js`, `js/data.js`, `js/model/norm.js`, `test/index.html`, `test/harness.js`, `test/norm.test.js`, `test/data.test.js`, `test/config.test.js` | 16/16 | 2026-07-15 |
-| 2 | `ident.js` (A2, A3, A4) 🔴 — payload + valider | `js/model/ident.js`, `test/ident.test.js` | 33/33 | 2026-07-15 |
-| 3 | 🔴 `lattice.js` — rang, join, fusion | `js/model/lattice.js`, `test/lattice.test.js` | 17/17 | 2026-07-15 |
-| 4 | 🔴 `store.js` — IndexedDB, reg, cancel | `js/db/store.js`, `test/store.test.js` | 22/22 | 2026-07-15 |
-| 5 | `slots.js` — slotDe, slotAvecOverride | `js/model/slots.js`, `test/slots.test.js` | 13/13 | 2026-07-15 |
-| 6 | `camera.js`, `decode.js`, `debounce.js` (scan brut) | `vendor/jsqr.js`, `js/scan/camera.js`, `js/scan/decode.js`, `js/scan/debounce.js`, `test/scan.test.js` | 12/12 | 2026-07-15 |
-| 7 | 🔴 `pipeline.js` — `Scan()` | `js/scan/pipeline.js`, `test/pipeline.test.js`, `test/index.html` | 9/9 | 2026-07-15 |
-| 8 | `feedback.js` — Audio + vibration (C7) | `js/feedback.js`, `test/feedback.test.js` | 8/8 | 2026-07-15 |
-| 9 | Écran Scan — UI + sélecteur Auto/Matin/Midi | `js/ui/screen-scan.js`, `test/screen-scan.test.js` | 16 (22 fonctions pures+imports) | 2026-07-15 |
-| 10 | 🔴 `report.js` — etatCellule, stats | `js/model/report.js`, `test/report.test.js` | 18/18 | 2026-07-15 |
-| 11 | Écran Rapport + `@media print` → PDF | `js/ui/screen-report.js`, `css/app.css`, `assets/logos.js`, `test/screen-report.test.js`, `test/report-render.test.js` | 28/28 (183/183 total) | 2026-07-15 |
-| 12 | Écran Réglages — DATES modifiables, Mode test, EFFACER | `js/ui/screen-setup.js`, `js/config.js`, `css/app.css`, `test/screen-setup.test.js`, `test/config.test.js`, `test/index.html` | 56/56 core (config+slots+report) + 8 DOM-only screen-setup | 2026-07-16 |
+| # | Étape | Fichiers | Tests | Modèle | Date |
+|---|---|---|---|---|---|
+| 1 | `config.js`, `data.js`, `norm.js` + harnais | `js/config.js`, `js/data.js`, `js/model/norm.js`, `test/index.html`, `test/harness.js`, `test/norm.test.js`, `test/data.test.js`, `test/config.test.js` | 16/16 | — | 2026-07-15 |
+| 2 | `ident.js` (A2, A3, A4) 🔴 — payload + valider | `js/model/ident.js`, `test/ident.test.js` | 33/33 | — | 2026-07-15 |
+| 3 | 🔴 `lattice.js` — rang, join, fusion | `js/model/lattice.js`, `test/lattice.test.js` | 17/17 | — | 2026-07-15 |
+| 4 | 🔴 `store.js` — IndexedDB, reg, cancel | `js/db/store.js`, `test/store.test.js` | 22/22 | — | 2026-07-15 |
+| 5 | `slots.js` — slotDe, slotAvecOverride | `js/model/slots.js`, `test/slots.test.js` | 13/13 | — | 2026-07-15 |
+| 6 | `camera.js`, `decode.js`, `debounce.js` (scan brut) | `vendor/jsqr.js`, `js/scan/camera.js`, `js/scan/decode.js`, `js/scan/debounce.js`, `test/scan.test.js` | 12/12 | — | 2026-07-15 |
+| 7 | 🔴 `pipeline.js` — `Scan()` | `js/scan/pipeline.js`, `test/pipeline.test.js`, `test/index.html` | 9/9 | — | 2026-07-15 |
+| 8 | `feedback.js` — Audio + vibration (C7) | `js/feedback.js`, `test/feedback.test.js` | 8/8 | — | 2026-07-15 |
+| 9 | Écran Scan — UI + sélecteur Auto/Matin/Midi | `js/ui/screen-scan.js`, `test/screen-scan.test.js` | 16/16 (22 fonctions pures+imports) | — | 2026-07-15 |
+| 10 | 🔴 `report.js` — etatCellule, stats | `js/model/report.js`, `test/report.test.js` | 18/18 | — | 2026-07-15 |
+| 11 | Écran Rapport + `@media print` → PDF | `js/ui/screen-report.js`, `css/app.css`, `assets/logos.js`, `test/screen-report.test.js`, `test/report-render.test.js` | 28/28 (183/183 total) | — | 2026-07-15 |
+| 12 | Écran Réglages — DATES modifiables, Mode test, EFFACER | `js/ui/screen-setup.js`, `js/config.js`, `css/app.css`, `test/screen-setup.test.js`, `test/config.test.js`, `test/index.html` | 56/56 core + 8 DOM-only | — | 2026-07-16 |
+| 13 | `badges.js` — planche A4 de 16 QR version 1-Q | `vendor/qrcode.js`, `js/badges.js`, `css/app.css`, `test/badges.test.js`, `test/badges-print.html`, `test/index.html` | 12/12 ⚠️ test physique en attente | claude-opus-4-8 | 2026-07-16 |
+
+---
 
 ## Décisions prises hors spec
 
 ### `getConfig()` reste synchrone
-La spec PATCH v1.1 §P2 décrit `getConfig()` comme lisant `meta.reglages` depuis IndexedDB, ce qui serait async. Mais le chemin de scan (`pipeline.js`) doit rester synchrone (PATCH §P4). Décision : `config.js` maintient un cache mémoire `_overrides` alimenté par `hydrateConfig(o)`, appelée une fois au boot par `main.js` à l'étape 4. `getConfig()` est synchrone.
+La spec PATCH v1.1 §P2 décrit `getConfig()` comme lisant `meta.reglages` depuis IndexedDB, ce qui serait async. Mais le chemin de scan (`pipeline.js`) doit rester synchrone (PATCH §P4). Décision : `config.js` maintient un cache mémoire `_overrides` alimenté par `hydrateConfig(o)`, appelée une fois au boot par `main.js`. `getConfig()` est synchrone.
 
-Conséquence : si `hydrateConfig` n'est pas appelée (étape 1 à 3), `getConfig() === DEFAULTS`. Les modules des étapes 1-3 n'ont pas besoin du store meta.
+Conséquence : si `hydrateConfig` n'est pas appelée (étape 1 à 3), `getConfig() === DEFAULTS`.
 
 ### `package.json` pour les tests Node
-Le projet interdit `npm install` / `node_modules`, mais un `package.json` contenant uniquement `{"type":"module"}` est nécessaire pour lancer les tests en Node (les sources sont en `.js` ESM). Ce fichier N'EST PAS versionné — supprimé après chaque run. Alternative : utiliser `test/run.mjs` (`.mjs` est toujours ESM) mais il importe des `.js` qui, sans `package.json`, sont traités en CJS par Node. Solution de contournement : créer/effacer `package.json` à chaque session de test, ou utiliser le lanceur navigateur (`python3 -m http.server 8000`).
+Le projet interdit `npm install` / `node_modules`, mais un `package.json` contenant uniquement `{"type":"module"}` est nécessaire pour lancer les tests en Node. Ce fichier N'EST PAS versionné — créé/supprimé à chaque session de test CLI. Alternative : navigateur via `python3 -m http.server 8000`.
 
 ### Lanceur de tests en `http://localhost`
-La spec §2 disait « ouvrable au navigateur ». En réalité, les modules ES en `file://` sont bloqués par CORS. Décision (PATCH §P1) : servir via `python3 -m http.server 8000` et ouvrir `http://localhost:8000/test/index.html`. `localhost` est aussi un contexte sécurisé, donc `getUserMedia` marche en dev.
-
-### `test/run.mjs` hors spec
-Fichier utilitaire créé pour exécuter les tests en ligne de commande (sortie plus rapide que le navigateur). Non listé dans l'arborescence §2. Supprimé avant commit. Peut être recréé au besoin.
+Les modules ES en `file://` sont bloqués par CORS. Décision (PATCH §P1) : servir via `python3 -m http.server 8000`. `localhost` est aussi un contexte sécurisé → `getUserMedia` marche en dev.
 
 ### `precalcChecksums()` appelée explicitement (pas à l'import)
-La spec §A3 dit « Pré-calculer les 16 checksums au démarrage dans une Map ». Suivant le même pattern que `hydrateConfig()` (config.js), `precalcChecksums()` est une fonction exportée appelée explicitement par les tests (et plus tard par `main.js`). Elle n'est PAS appelée automatiquement à l'import du module — ce serait un side-effect caché hors de contrôle.
-Conséquence pour le test : chaque test qui utilise `valider` appelle `await precalcChecksums()` d'abord.
+La spec §A3 dit « Pré-calculer les 16 checksums au démarrage ». Comme `hydrateConfig()`, `precalcChecksums()` est une fonction exportée appelée explicitement par les tests (et par `main.js`). Pas de side-effect à l'import.
+Conséquence : chaque test qui utilise `valider` appelle `await precalcChecksums()` d'abord. `genererBadges()` l'appelle internalement.
 
 ### `store.reg` et `store.cancel` sont async (persistance IndexedDB)
-La spec §6.3/§6.4 décrit `reg` et `cancel` comme des fonctions pures synchrones sur une `Map<Cle, PointageValue>`. Mais `store.js` doit persister en IndexedDB (API asynchrone). Décision : les méthodes du Store sont `async` ; la sauvegarde DB est `await`-ée avant le retour. La garantie de durabilité prime sur la pureté.
+La spec décrit `reg`/`cancel` comme des fonctions pures synchrones. Mais IndexedDB est async. Décision : méthodes async, `await` avant le retour. Durabilité prime sur pureté.
 
-### Le Store encapsule la Map (pas de retour de `m` dans les résultats)
-La spec §6.3 dit `retourner { m, DEJA_POINTE(v.tau) }` — le Map modifié est dans le résultat. Le Store possède la Map en interne et expose `getPointages()` pour y accéder. Les résultats de `reg`/`cancel` ne contiennent pas la Map — seulement le statut (`OK`/`DEJA_POINTE`/`ERREUR`) et les payloads (participant, tau). Si pipeline.js (étape 7) a besoin de la pure fonction, elle sera extraite à ce moment-là.
+### Le Store encapsule la Map
+La spec dit `retourner { m, DEJA_POINTE(v.tau) }`. Le Store possède la Map en interne et expose `getPointages()`. Les résultats de `reg`/`cancel` ne contiennent pas la Map — seulement le statut et les payloads.
 
 ### `valider` hardcode `'BIM26-'` dans la REGEX
-La spec §A4 donne `REGEX = /^BIM26-([0-9]{3})-([A-Z2-7]{2})$/`. Idem pour `id = 'BIM26-' + m[1]`. Ce n'est PAS paramétré par `PREFIXE_ID`. Raison : si PREFIXE_ID change, le format QR change, et la REGEX doit être réécrite de toute façon — ce n'est pas un réglage runtime. Décision : suivre la spec à la lettre, hardcoder.
+`REGEX = /^BIM26-([0-9]{3})-([A-Z2-7]{2})$/` n'est pas paramétré par `PREFIXE_ID`. Si PREFIXE_ID change, le format QR change et la REGEX doit être réécrite de toute façon. Décision : suivre la spec à la lettre.
 
-### jsQR converti de UMD → ES module (vendor/jsqr.js)
-Le fichier téléchargé est un UMD webpack. Pour l'importer depuis `decode.js` en module ES natif, le wrapper UMD a été remplacé par `const _jsQR = (function() { … })(); export default _jsQR;`. Alternative (chargement via `<script>` HTML) aurait cassé la régularité du système de modules. Décision : conversion à la ligne 1 (suppression du wrapper) et ligne 10101 (ajout de l'export).
+### jsQR converti de UMD → ES module (`vendor/jsqr.js`)
+Le wrapper webpack UMD a été remplacé par `const _jsQR = (function() { … })(); export default _jsQR;`. Modification ligne 1 et ligne 10101.
+
+### `vendor/qrcode.js` converti de UMD → ES module (étape 13)
+Source : qrcode-generator v1.4.4 (kazuhikoarase), téléchargé depuis jsDelivr. Les 9 dernières lignes (wrapper UMD AMD/CJS) supprimées, remplacées par `export default qrcode;`. `qrcode(typeNumber, errorCorrectionLevel)` est une factory (sans `new`) — retourne `_this = {}`. Avec `typeNumber=1`, `make()` saute l'auto-détection et force la version 1 (21×21 modules).
+
+### `badges.js` — payload encodé en mode Alphanumeric QR (étape 13)
+`qr.addData(pl, 'Alphanumeric')` force le mode alphanumérique (jeu 45 chars : `0-9 A-Z $%*+-./:` + espace). Le payload `BIM26-001-XY` (12 chars) utilise uniquement majuscules, chiffres et tirets — tous dans le jeu. Capacité version 1-Q en alphanumérique : 16 chars → 12 ≤ 16 ✓. Sans ce mode, la bibliothèque aurait pu choisir le mode Byte et forcer la version 2.
+
+### `renderBadges(container)` — SVG inline via innerHTML (étape 13)
+Le rendu HTML est construit en string et injecté via `innerHTML`. Les SVG QR sont inline (pas de `<img src="blob:...">`). Compatible hors-ligne, aucun asset externe.
 
 ### `retenir` hardcode 3000 ms (pas `DEBOUNCE_MS`)
-La spec §C4 donne la pseudo-code avec `3000` littéral, pas `getConfig().DEBOUNCE_MS`. Suivi la spec à la lettre. Si pipeline.js (étape 7) a besoin d'un seuil configurable, `retenir` prendra un paramètre supplémentaire.
+La spec §C4 donne `3000` littéral. Suivi à la lettre.
 
-### Geler la boucle : freeze() externe via le contrôleur
-La spec §C1 dit « Geler la boucle pendant l'affichage du résultat (300 ms) ». `lancerBoucle` retourne un contrôleur avec `freeze(ms)` appelable par pipeline.js. Décision : ne pas coder le gel dans la boucle elle-même — pipeline.js décide quand geler (après un scan réussi).
+### Geler la boucle : `freeze()` externe via le contrôleur
+`lancerBoucle` retourne un contrôleur avec `freeze(ms)`. `pipeline.js` décide quand geler.
 
 ### `Scan()` prend `_decode` injectable en 6e paramètre
-La spec §7 donne la signature `Scan(image, t, override, m, H)`. Pour tester les 5 branches sans générer un vrai QR (pas de `vendor/qrcode.js` avant l'étape 12), le 6e paramètre `_decode = decode` permet l'injection d'un `fakeDecode` dans les tests. La signature publique (5 premiers paramètres) correspond à la spec ; le 6e ne change pas l'API.
+Pour tester les 5 branches sans vrai QR. La signature publique (5 params) correspond à la spec.
 
-### ROI extraite avant pipeline.js, pas dedans
-La spec §7 montre `w ← decode(roi(image))` — `roi()` fait partie du pseudo-code de Scan. Mais `camera.js:lancerBoucle` extrait déjà la ROI (`captureROI`) avant d'appeler `onFrame(roi)`. L'architecture sépare : la caméra gère le prélèvement, le pipeline la logique métier. Le pipeline reçoit l'ImageData déjà rogné. Conséquence : si un futur appelant appelle `Scan` sans passer par la caméra, il doit fournir un `ImageData` déjà rogné (ou accepter le décodage hors ROI).
+### ROI extraite avant pipeline.js
+`camera.js:lancerBoucle` extrait la ROI avant `onFrame(roi)`. Pipeline reçoit l'ImageData déjà rogné.
 
-### `cle` construite inline dans Scan (pas de fonction dédiée)
-La spéciﬁcation formelle note `cle(w.id, s)` pour la clé de pointage, mais aucune fonction `cle()` n'est définie dans les modules du §2. La clé `"BIM26-{d}|{date}|{creneau}"` est donc construite inline dans pipeline.js par extraction regex du `w` (garanti valide par `valider`). Si une session future exporte `cle()` depuis `ident.js` ou ailleurs, le code pourra être refactoré.
+### `cle` construite inline dans Scan
+Pas de fonction `cle()` définie dans les modules §2. Construite inline depuis le payload validé.
 
-### `feedback.js` ne gère que Son + Vibration, pas Couleur + Message
-La spec §8 (Module C7) donne un tableau à 5 colonnes (Son, Vibration, Couleur, Message). Mais l'étape 8 du §12 est intitulée « Audio + vibration (C7) » et l'étape 9 (« Écran Scan ») gère l'UI. Décision : `feedback.js` se limite au retour non-visuel (son + vibration). Couleur et message texte seront affichés par `screen-scan.js` à l'étape 9. Si une session future veut centraliser, `feedback.js` peut exporter un dictionnaire supplémentaire.
+### `feedback.js` ne gère que Son + Vibration
+Étape 8 intitulée « Audio + vibration ». Couleur et message texte gérés par `screen-scan.js` (étape 9).
 
 ### Gap de 100ms entre les deux tones DEJA_POINTE
-La spec dit « 660 Hz ×2, 80 ms » sans préciser l'intervalle. Choix : délai de 180ms pour le second tone (gap de 100ms entre la fin du premier tone et le début du second). La vibration suit un pattern `[30, 100, 30]` (gap cohérent de 100ms).
+Spec dit « 660 Hz ×2, 80 ms » sans préciser l'intervalle. Choix : 180ms pour le 2e tone. Vibration `[30, 100, 30]`.
 
 ### `initAudio()` protégée contre l'absence de `window` en Node
-`window` n'existe pas en Node → `window.AudioContext` lève ReferenceError. Décision : ajouter `typeof window !== 'undefined' &&` en garde. Même motif que `vibrer()` qui protège `typeof navigator`.
+Garde `typeof window !== 'undefined' &&` avant `window.AudioContext`.
 
-### Couleurs hex du feedback visuel non spécifiées
-La spec §8 donne « vert », « orange », « rouge », « gris » sans valeurs hex. Choix : `#4caf50` (vert Material), `#ff9800` (orange), `#f44336` (rouge), `#9e9e9e` (gris). Cohérent avec Material Design. Si un thème métier exige d'autres teintes, changer les 4 constantes dans `screen-scan.js:couleurPourResultat()`.
+### Couleurs hex du feedback visuel
+`#4caf50` (vert), `#ff9800` (orange), `#f44336` (rouge), `#9e9e9e` (gris). Material Design.
 
 ### Messages d'erreur ERREUR choisis librement
-La spec §8 dit « message dédié » pour `format`/`checksum`/`inconnu` sans préciser le texte. Choix : « Format non reconnu », « Checksum invalide », « Code inconnu ». Si le client veut des libellés différents, les changer dans `messagePourResultat()`.
+« Format non reconnu », « Checksum invalide », « Code inconnu ».
 
 ### H_MAP (debounce) module-level dans screen-scan.js
-L'historique anti-rebond `H` est une `Map` privée au niveau du module (`const H_MAP = new Map()`), partagée entre tous les appels à `screenScan()` sur la même page. Décision : pas besoin de la passer comme paramètre car il n'y a qu'un seul écran de scan à la fois. Si un futur routage d'écrans crée/détruit plusieurs instances, `H_MAP` devra être réinitialisé.
+`const H_MAP = new Map()` privée au module. Un seul écran de scan à la fois.
 
-### formatTau calcule HH:MM en UTC+1 manuel
-Pour afficher « déjà pointé à HH:MM », `formatTau()` ajoute 3600000 ms à l'epoch puis lit `getUTCHours/minutes`. Même pattern que `localDouala()` dans `slots.js`. Pas de `toLocaleString` (évite dépendance au fuseau OS). Décision : duplication du pattern plutôt que d'exporter `localDouala` depuis `slots.js` (modification d'un module existant hors étape 9).
-
-### Overlay résultat en `position:absolute` en bas
-La spec ne précise pas le placement du message de résultat. Choix : overlay positionné en bas de l'écran (`bottom:0`), semi-transparent si fond, pour ne pas masquer le flux caméra. Le sélecteur Auto/Matin/Midi est en haut. Le flux vidéo est en `display:block` derrière.
+### `formatTau` calcule HH:MM en UTC+1 manuel
+Ajoute 3600000 ms à l'epoch, lit `getUTCHours/minutes`. Pas de `toLocaleString`. Dupliqué dans `screen-scan.js` (séparateur `:`) et `screen-report.js` (séparateur `h`).
 
 ### `finDe()` définie dans `report.js`, pas dans `slots.js`
-La spec §E1 mentionne `finDe(s)` sans préciser son module. Nécessaire à `etatCellule` et `slotsEchus`, toutes deux dans `report.js`. La mettre dans `slots.js` aurait modifié un module existant hors étape. Décision : définir `finDe` dans `report.js`. Si une étape future en a besoin ailleurs, extraire.
+Nécessaire à `etatCellule` et `slotsEchus`. Aurait modifié un module existant hors étape.
 
 ### Signature `etatCellule(m, participant, slot, tNow)`
-La spec donne `(participant, slot, tNow)` mais le pseudo-code lit `m.get(...)`. Puisque `report.js` est un module pur, `m` est un paramètre (comme `reg(m, ...)` dans lattice.js). Décision : `m` en premier paramètre, `participant`, `slot`, `tNow` ensuite.
+Spec donne `(participant, slot, tNow)` mais le pseudo-code lit `m.get(...)`. `m` en premier paramètre, pattern lattice.js.
 
-### `presents` implémentation directe (pas via `etatCellule`)
-La spec définit `presents(s) = |{ p : etatCellule(p,s).type = 'present' }|`. L'implémentation itère directement sur `m.get(cle(numero, slot))` au lieu d'appeler `etatCellule` 16 fois avec un `tNow` factice. Même résultat, évite de passer `Infinity` comme tNow.
-
-### E3 (tri) laissé à l'étape 11
-La spec §E3 décrit les tris mais l'étape 10 livre seulement `etatCellule` et `stats`. `PARTICIPANTS` est déjà ordonné par `numero` en lecture. Les tris alphabétique/assiduité sont réservés à l'écran de consultation (`screen-report.js`, étape 11+). Aucune fonction de tri exportée de `report.js`.
-
-### Portrait choisi sans mesure réelle (étape 11)
-La spec §10 demande d'imprimer un tableau d'essai et de mesurer avant de trancher portrait/paysage. Le tableau d'essai a été créé (`test/tableau-essai.html`) mais aucune impression n'a été faite. Décision : portrait (bi-ligne `P` + `08h42` tient dans 14mm en 8pt condensé). Si l'impression montre un problème, passer au paysage avec un `@page` landscape.
-
-### formatTau en "h" pour le rapport (pas ":" comme screen-scan)
-Le format d'heure dans le tableau du rapport suit le document source qui montre "08h42" (avec "h"). L'écran de scan utilise "08:42" (avec ":"). Les deux `formatTau` sont dupliqués (`screen-scan.js` et `screen-report.js`) avec des séparateurs différents. Décision : suivre la spec pour chaque contexte.
+### `presents` implémentation directe
+Itère directement sur `m.get(cle(numero, slot))` sans appeler `etatCellule` 16 fois avec `tNow=Infinity`.
 
 ### `mergeConfig` ajouté pour les mises à jour incrémentales (étape 12)
-`config.js` avait `hydrateConfig(o)` qui remplace `_overrides` en totalité. `screen-setup.js` a besoin de ne changer que `DATES` sans écraser les autres overrides chargés depuis le store `meta`. Décision : ajouter `mergeConfig(partial)` qui fusionne dans `_overrides` existant.
+`hydrateConfig(o)` remplace `_overrides` en totalité. `screen-setup.js` a besoin de ne changer que `DATES` → `mergeConfig(partial)` fusionne dans `_overrides` existant.
 
-### `screenSetup` synchrone, retourne `{ refresh }` (pas `onSave`)
-Comme `screenReport`, l'écran Réglages n'a pas d'opération async. Le callback `onClearAll` est passé en option. Les changements de dates sont appliqués immédiatement via `mergeConfig` — pas de bouton "Enregistrer". Décision : pas de `onSave` callback, le rendu reflète l'état courant.
+### `screenSetup` synchrone, retourne `{ refresh }` (étape 12)
+Pas d'opération async. `onClearAll` passé en option. Changements de dates appliqués immédiatement via `mergeConfig`.
 
-### "EFFACER TOUTES LES DONNÉES" via callback (pas d'implémentation directe)
-Le bouton appelle `onClearAll()` s'il est fourni. `store.clearAll()` n'existe pas encore — c'est une dette laissée à l'étape qui implémente la suppression réelle (étape 13+).
+### "EFFACER TOUTES LES DONNÉES" via callback (étape 12)
+`store.clearAll()` n'existe pas encore. Le bouton appelle `onClearAll()` si fourni.
 
 ### Seulement DATES dans l'écran Réglages (étape 12)
-La spec liste 7 champs modifiables (`DATES`, `H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `DEBOUNCE_MS`, `BADGES_PAR_PAGE`, `MULTI_APPAREILS`). L'étape 12 n'implémente que `DATES`. Les 6 autres seront ajoutés dans une étape ultérieure.
+Les 6 autres champs modifiables (`H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `DEBOUNCE_MS`, `BADGES_PAR_PAGE`, `MULTI_APPAREILS`) sont laissés à une étape ultérieure.
 
-### screen-setup.js retourne `{ refresh }` (pattern screen-report)
-Comme `screenReport`, l'écran Réglages n'a pas d'opération async. Le callback `onClearAll` est passé en option. Les changements de dates sont appliqués immédiatement via `mergeConfig` — pas de bouton "Enregistrer". Le contrôleur `refresh()` permet de resynchroniser les champs après une modification externe des overrides.
+### Logos extraits du .docx (étape 11)
+5 logos (LOGO_GREEN, LOGO_ACCA, LOGO_ICON, LOGO_3D, LOGO_QR) intégrés dans `assets/logos.js`. Tableau rapport réécrit en 8 colonnes (THÈMES, LIEU, PERSONNELS, EFFECTIFS, Jour 1-3) avec `rowspan=16` sur les 4 premières colonnes.
 
-### Logos extraits du .docx `LISTE DE PRÉSENCE.docx`
-Les 5 logos (LOGO_GREEN, LOGO_ACCA, LOGO_ICON, LOGO_3D, LOGO_QR) ont été extraits du document source et intégrés dans `assets/logos.js`. Le visuel 3D et le QR décoratif ne sont plus manquants. Le tableau du rapport a été réécrit pour matcher la structure 8 colonnes du .docx (N°, THÈMES, LIEU, PERSONNELS, EFFECTIFS, Jour 1-3), avec `colspan="8"` pour l'en-tête direction et `rowspan=16` sur N°/THÈMES/LIEU/EFFECTIFS dans le tbody.
+### Portrait choisi sans mesure réelle (étape 11)
+Tableau d'essai créé (`test/tableau-essai.html`) mais pas imprimé. Décision : portrait. Si l'impression montre un problème → `@page landscape`.
+
+---
 
 ## Écarts assumés par rapport à la spec
 
 ### `norm()` — remplacement des apostrophes courbes (§5 A1)
-La formalisation définit `norm = trim ∘ squeeze ∘ lowerInvariant ∘ stripDiacritiques ∘ NFKD` sans prétraitement des apostrophes. Or `ANYOUZO'A` ν2 contient U+2019, qu'un clavier d'ordinateur ne tape pas. Un opérateur cherchant `anyouzo'a` (apostrophe droite U+0027) ne trouverait jamais ν2.
+La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'")` avant NFKD, pour que la recherche `anyouzo'a` (apostrophe droite) trouve `ANYOUZO'A` (U+2019). Documenté pour qu'une session future ne le « corrige » pas.
 
-Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PATCH v1.1) : ajouter `.replace(/[’‘]/g, "'")` **avant** NFKD. C'est un écart délibéré, documenté ici pour qu'une session future ne le « corrige » pas en revenant à la formalisation.
+---
+
+## Mesures physiques
+
+| Mesure | Résultat | Décision |
+|---|---|---|
+| iPhone/Safari · impression rapport | barre = 88 mm au lieu de 100 mm. Safari ignore `@page margin:0` → échelle 87.9 %. | ✅ ACCEPTÉ (échelle uniforme, rien ne déborde). Ne pas rouvrir. |
+| iPhone · caméra HTTPS + PWA standalone | — | ✅ FONCTIONNE |
+| iPhone · ding AudioContext | Audible mais state = 'suspended' | DETTE : `await ctx.resume()` dans `initAudio()` |
+| Badges QR · impression + scan physique | — | ⚠️ EN ATTENTE |
+| Rapport PDF · impression réelle (largeurs) | — | ⚠️ EN ATTENTE avant le jour J |
+
+---
 
 ## Dettes / TODO laissés derrière
 
-- `hydrateConfig()` sera appelée par `main.js` (étape 10+) — pour l'instant `_overrides` reste vide.
-- `precalcChecksums()` sera appelée par `main.js` (étape 10+) — pour l'instant les tests l'appellent manuellement.
-- `js/model/lattice.js` référence `@typedef {import('../data.js').PointageValue}` mais `PointageValue` n'est défini nulle part en JSDoc (la spec §4.2 le donne en commentaire uniquement). Sans conséquence runtime, mais un `@typedef` dans `data.js` serait bien.
-- `store.js` importe `getConfig()` (dépendance déclarée) mais ne l'utilise pas encore — nécessaire pour `reg` si `DEFAULTS` influence le comportement plus tard.
-- `deletePointage()` dans `store.js` est exporté inutilisé — réservé pour l'étape 13+ (écran Liste, reset de pointage).
-- `camera.js` importe `getConfig()` mais les tests Node ne peuvent pas vérifier `captureROI` et `lancerBoucle` (manque DOM/getUserMedia). Vérification uniquement du typage des exports.
-- `decode.js` n'est pas testable en Node — `ImageData` inexistant, `BarcodeDetector` inexistant. Le test `decode(bruit) → null` ne tourne que dans un navigateur.
-- `pipeline.js` branche 1 (decode réel + ImageData noise) ne tourne qu'au navigateur. Les branches 2-5 utilisent `_decode` injectable, testables en Node.
-- `pipeline.js` n'appelle pas `roi()` — cohérent avec le fait que `camera.js` livre déjà l'ImageData rogné. Si l'étape 9 ou 13 appelle `Scan()` sans passer par `camera.js`, l'image ne sera pas rognée. Ce n'est pas un bug tant que l'appelant applique ROI avant.
-- `screen-scan.js` : les tests DOM (structure, bouton, sélecteur) ne tournent qu'au navigateur (manque `document.createElement` en Node). Les 4 tests P2/P3/P15/P16 ne peuvent pas être vérifiés en CLI — seulement via `http://localhost:8000/test/index.html`.
-- `report.js` : `cle()` est une fonction privée (non exportée) dupliquée de `pipeline.js` — les deux construisent la même clé `"id|date|creneau"`. Si une refactor future exporte `cle()` d'un module commun, les deux appels devront être mis à jour simultanément.
-- `report.js` : `finDe` calcule la fin de matin à H_BASCULE et midi à H_FIN_MIDI. Si une étape future ajoute un créneau (ex. `soir`), `finDe` et `slotsEchus` devront être adaptées.
-- `assets/logos.js` : les 5 logos sont extraits du .docx. `LOGO_ICON` (décorateur) n'est pas utilisé dans le rapport actuel — réservé pour un usage futur.
-- `screen-report.js` : `formatTau` dupliqué depuis `screen-scan.js` avec un séparateur "h" au lieu de ":". Si une refactor future centralise les formats, rapprocher les deux.
-- `screen-report.js` : le choix portrait/paysage n'a pas été mesuré sur impression réelle. Le tableau est passé de 11 à 8 colonnes, ce qui réduit la largeur nécessaire. Vérifier sur une vraie imprimante avant le jour J. Si ça ne tient pas, ajouter une classe `.landscape` et changer `@page`.
-- `css/app.css` : les écrans autres que le rapport (scan, liste) n'ont pas encore de styles. Le fichier ne contient que les styles du rapport et le setup.
-- `screen-setup.js` : seuls `DATES` sont éditables ; `H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `DEBOUNCE_MS`, `BADGES_PAR_PAGE`, `MULTI_APPAREILS` manquent.
-- `store.clearAll()` n'existe pas — le bouton "EFFACER TOUTES LES DONNÉES" attend un callback externe.
-- Les tests DOM de `screen-setup.test.js` (8 tests P1-P8) ne tournent qu'au navigateur (`document.createElement`).
+- `hydrateConfig()` sera appelée par `main.js` — pour l'instant `_overrides` reste vide.
+- `precalcChecksums()` sera appelée par `main.js` — pour l'instant les tests l'appellent manuellement (sauf `genererBadges()` qui l'appelle internalement).
+- `js/model/lattice.js` : `@typedef {import('../data.js').PointageValue}` mais `PointageValue` n'est défini nulle part en JSDoc. Sans conséquence runtime.
+- `store.js` importe `getConfig()` mais ne l'utilise pas encore.
+- `deletePointage()` dans `store.js` est exporté inutilisé — réservé pour l'étape écran Liste.
+- `camera.js` : `captureROI` et `lancerBoucle` non testables en Node (manque DOM/getUserMedia).
+- `decode.js` non testable en Node (`ImageData`, `BarcodeDetector` inexistants).
+- `pipeline.js` branche 1 (decode réel) ne tourne qu'au navigateur.
+- `screen-scan.js` : 4 tests DOM ne tournent qu'au navigateur.
+- `report.js` : `cle()` privée dupliquée de `pipeline.js`. Si une refactor exporte `cle()`, mettre à jour les deux.
+- `assets/logos.js` : `LOGO_ICON` non utilisé dans le rapport — réservé.
+- `css/app.css` : styles scan, liste, badges (impression) à affiner. Pas de styles pour screen-list.
+- `screen-setup.js` : 6 champs modifiables manquants.
+- `store.clearAll()` n'existe pas.
+- Tests DOM de `screen-setup.test.js` (8 tests P1-P8) uniquement navigateur.
+- `feedback.js` : dette AudioContext — `await ctx.resume()` + un seul contexte réutilisé (piège iOS).
+- `badges.js` : `test/badges-print.html` est une page de prévisualisation hors spec, à supprimer ou intégrer dans `main.js` quand le routeur existera.
+
+---
 
 ## Pièges rencontrés
 
-1. **Apostrophe U+2019 dans le copier-coller.** Le fichier `data.js` doit contenir l'apostrophe typographique U+2019 et non U+0027. Le test `ν2 contient U+2019` la détecte. Au clavier, difficile à taper : utiliser `\u2019`.
-2. **`file://` et modules ES.** Les tests ne s'ouvrent pas en `file://` — toujours utiliser le serveur HTTP Python. Ne pas perdre de temps à debugger CORS en local.
-3. **Node.js et imports ESM `.js`.** Node requiert un `package.json` avec `"type":"module"` pour importer des fichiers `.js` contenant des `export`/`import`. Sans ça, tout est traité en CJS. La façon la plus propre est de créer `package.json` temporairement pour les runs CLI, ou d'utiliser le navigateur.
-4. **`Object.freeze` est superficiel.** `DEFAULTS.DATES` est un tableau gelé en référence, mais ses éléments ne le sont pas. Pour l'étape 1, c'est suffisant car `DATES` n'est jamais modifié.
-5. **`crypto.subtle.digest` est async.** `checksum` et `payload` retournent des Promises. `valider` reste synchrone car elle lit `CHECKSUMS` pré-calculée. Ne pas oublier d'`await` les appels à `payload` ou `checksum` dans les étapes suivantes.
-6. **Base32 alphabet.** L'alphabet de la spec est `"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"` (RFC 4648, sans padding). Attention à ne pas utiliser un alphabet Base32 URL-safe ou hex qui changerait les checksums et invaliderait tous les badges imprimés.
-7. **Taux de détection probabiliste.** Le test « faux positifs < 20 sur 10⁴ » peut techniquement échouer une fois sur des millions de runs (probabilité ~10⁻¹⁶). Si ça arrive, relancer.
-8. **IndexedDB : fermeture avant fin de transaction.** `reg` et `cancel` écrivent en IndexedDB. Si on ferme la DB (`close()`) avant la fin de la transaction, l'écriture est perdue. Solution : `await` systématique des appels à `savePointage()` dans `reg`/`cancel`, et `await store.reg(...)` avant `store.close()`.
-9. **Noms de base uniques par test.** Les tests de persistance ouvrent/ferment/ré-ouvrent la même base. Si deux tests partagent le même nom de base, l'état IndexedDB peut contaminer l'autre test. Solution : chaque test génère un nom unique (`bim-test-{timestamp}-{random}`) et le supprime en sortie.
-10. **`replaceAll` sur `s.reg(` crée des doubles `await`.** En faisant `replaceAll("s.reg(", "await s.reg(")`, une ligne déjà `await s.reg(` devient `await await s.reg(`. Solution : vérifier le fichier après remplacement global.
-11. **Conversion UMD → ES module pour jsQR.** Le fichier jsQR est 10102 lignes. Le convertir demande de modifier la ligne 1 (supprimer le wrapper UMD) et la toute dernière ligne (ajouter `export default`). Le webpack bootstrap doit être exécuté et son résultat exporté : `const _jsQR = (function() { … })(); export default _jsQR;`. Ne pas toucher aux modules webpack internes.
-12. **Tests de décodage et caméra impossible en Node.** `ImageData`, `navigator.mediaDevices.getUserMedia`, `BarcodeDetector` sont des API navigateur. Les tests C2/C1 de l'étape 6 ne tournent pas en Node — seulement le navigateur ou un test unitaire partiel (debounce uniquement). Pour une CI sans navigateur, la sortie Node des 7 tests debounce + 2 tests d'existence d'export est la meilleure approximation.
-13. **`window` non défini en Node → ReferenceError.** En écrivant `window.AudioContext` dans `initAudio()`, le module planta en Node (test line). Solution : `typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)`.
-14. **`globalThis.navigator` en Node est un getter read-only.** Impossible de l'assigner directement pour mocker `navigator.vibrate`. Solution : `Object.defineProperty(globalThis, 'navigator', { configurable: true, get: () => ({ vibrate: fn }) })`.
-15. **Les nœuds texte entre `<tr>` dans `<thead>` cassent `:last-child` et `nth-child`.** Le sélecteur CSS `thead tr:last-child` ne trouve aucun élément car le dernier enfant de `<thead>` est un nœud texte (saut de ligne). Solution : utiliser `thead > tr` (qui ignore les nœuds texte) puis indexer par position, ou utiliser `:last-of-type`.
-16. **`rowspan=16` est dans le `tbody` (1ʳᵉ ligne), pas dans le `thead`.** La spec dit « N° a rowspan=16 » — c'est une fusion verticale des 16 lignes du corps du tableau. Dans le `thead`, N°/THÈMES/LIEU/EFFECTIFS ont `rowspan=2` (les 2 lignes d'en-tête). Confusion facile : vérifier où est la rangée qui a 16 éléments avant d'écrire les tests.
-17. **Playwright ne peut pas se connecter au serveur HTTP Python si le serveur est tué entre deux appels bash.** Le serveur python3 doit survivre entre les appels `bash` du domaine. Utiliser `nohup` avec `--directory` ou utiliser le même appel bash pour lancer le serveur ET le test.
+1. **Apostrophe U+2019 dans le copier-coller.** `data.js` doit contenir U+2019, pas U+0027. Utiliser `’`.
+2. **`file://` et modules ES.** CORS bloqué. Toujours utiliser le serveur HTTP Python.
+3. **Node.js et imports ESM `.js`.** Requiert `package.json` avec `"type":"module"`. Créer/supprimer à chaque session CLI.
+4. **`Object.freeze` est superficiel.** `DEFAULTS.DATES` est un tableau gelé en référence, ses éléments ne le sont pas.
+5. **`crypto.subtle.digest` est async.** `checksum` et `payload` retournent des Promises. `valider` reste synchrone via `CHECKSUMS` pré-calculée.
+6. **Base32 alphabet.** `"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"` (RFC 4648). Ne pas utiliser un alphabet URL-safe.
+7. **Taux de détection probabiliste.** Test « faux positifs < 20 sur 10⁴ » peut échouer une fois sur 10¹⁶ runs. Si ça arrive, relancer.
+8. **IndexedDB : fermeture avant fin de transaction.** `await` systématique avant `store.close()`.
+9. **Noms de base uniques par test.** Chaque test génère un nom unique `bim-test-{timestamp}-{random}`.
+10. **`replaceAll` sur `await` crée des doubles `await`.** Vérifier après remplacement global.
+11. **Conversion UMD → ES module pour jsQR.** 10102 lignes. Modifier ligne 1 (supprimer wrapper) et dernière ligne (ajouter export).
+12. **Tests décodage/caméra impossible en Node.** `ImageData`, `getUserMedia`, `BarcodeDetector` sont des API navigateur.
+13. **`window` non défini en Node → ReferenceError.** Garde `typeof window !== 'undefined' &&`.
+14. **`globalThis.navigator` en Node est un getter read-only.** Utiliser `Object.defineProperty`.
+15. **Nœuds texte entre `<tr>` cassent `:last-child`.** Utiliser `thead > tr` ou `:last-of-type`.
+16. **`rowspan=16` est dans le `tbody` (1ʳᵉ ligne), pas dans le `thead`.**
+17. **Playwright ne peut pas se connecter si le serveur Python est tué entre deux appels bash.**
+18. **`qrcode(typeNumber, errorCorrectionLevel)` est une factory, pas un constructeur.** Appeler sans `new`. `typeNumber=1` force la version 1 — `make()` saute l'auto-détection seulement si `typeNumber >= 1`. Passer `'Alphanumeric'` en mode `addData` ou la bibliothèque peut choisir Byte et forcer la version 2.
+
+---
 
 ## Prochaine étape
 
 À déterminer par l'opérateur. Reste à faire (liste non priorisée) :
-- Ajouter les 6 autres champs modifiables dans screen-setup.js
-- Implémenter `store.clearAll()`
-- `main.js` (routeur d'écrans)
-- `screen-list.js` (liste chronologique)
-- `badges.js` (planche QR)
-- `backup.js` (export/import JSON)
-- Tests métrologie (impression réelle)
-- Déploiement HTTPS + installation Android/iOS
+- ⚠️ Test physique badges : imprimer `http://localhost:8000/test/badges-print.html`, découper, scanner avec l'app
+- ⚠️ Test métrologie rapport : imprimer sur imprimante réelle, mesurer les largeurs
+- `main.js` (routeur d'écrans, câblage `hydrateConfig` + `precalcChecksums`)
+- `screen-list.js` (liste chronologique D1–D4)
+- `backup.js` (export/import JSON, fusion CRDT)
+- `store.clearAll()` + 6 champs modifiables dans screen-setup.js
+- `sw.js` + `manifest.webmanifest` (PWA, précache)
+- Déploiement HTTPS (Netlify/GitHub Pages) + installation Android/iOS
