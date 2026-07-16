@@ -27,7 +27,12 @@ function autoModeTest() {
     dateStr(new Date(t.getTime() + 864e5)),
     dateStr(new Date(t.getTime() + 2 * 864e5)),
   ];
-  mergeConfig({ DATES: dates });
+  mergeConfig({
+    DATES: dates,
+    H_DEBUT_MATIN: '00:00',
+    H_BASCULE:     '12:00',
+    H_FIN_MIDI:    '23:59',
+  });
 }
 
 function montrerScreen(nom) {
