@@ -158,6 +158,21 @@ export async function initDB(dbName) {
       return deviceId;
     },
 
+    async loadAllPointages(newMap) {
+      pointages.clear();
+      for (const [cle, v] of newMap) pointages.set(cle, { ...v });
+      const tx = db.transaction('pointages', 'readwrite');
+      const os = tx.objectStore('pointages');
+      os.clear();
+      for (const [cle, v] of newMap) {
+        os.put({ cle, generation: v.generation, statut: v.statut, tau: v.tau, mode: v.mode, device: v.device, override: v.override });
+      }
+      await new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    },
+
     close() {
       db.close();
     },

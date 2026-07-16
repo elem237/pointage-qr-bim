@@ -17,7 +17,8 @@
 | 11 | Écran Rapport + `@media print` → PDF | `js/ui/screen-report.js`, `css/app.css`, `assets/logos.js`, `test/screen-report.test.js`, `test/report-render.test.js` | 28/28 (183/183 total) | — | 2026-07-15 |
 | 12 | Écran Réglages — DATES modifiables, Mode test, EFFACER | `js/ui/screen-setup.js`, `js/config.js`, `css/app.css`, `test/screen-setup.test.js`, `test/config.test.js`, `test/index.html` | 56/56 core + 8 DOM-only | — | 2026-07-16 |
 | 13 | `badges.js` — planche A4 de 16 QR version 1-Q | `vendor/qrcode.js`, `js/badges.js`, `css/app.css`, `test/badges.test.js`, `test/badges-print.html`, `test/index.html` | 12/12 + scan physique BIM26-001-YJ ✅ | claude-opus-4-8 | 2026-07-16 |
-
+| 14 | Écran Liste + import/export (§9 D1–D4, §6.5) | `js/ui/screen-list.js`, `js/db/backup.js`, `js/db/store.js` (+loadAllPointages), `test/backup.test.js`, `test/screen-list.test.js`, `test/index.html` | 234/234 (10 backup + 15 screen-list) | — | 2026-07-16 |
+ 
 ---
 
 ## Décisions prises hors spec
@@ -118,6 +119,18 @@ Les 6 autres champs modifiables (`H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `DE
 ### Logos extraits du .docx (étape 11)
 5 logos (LOGO_GREEN, LOGO_ACCA, LOGO_ICON, LOGO_3D, LOGO_QR) intégrés dans `assets/logos.js`. Tableau rapport réécrit en 8 colonnes (THÈMES, LIEU, PERSONNELS, EFFECTIFS, Jour 1-3) avec `rowspan=16` sur les 4 premières colonnes.
 
+### `loadAllPointages` ajouté à store.js pour l'import (étape 14)
+L'import avec fusion CRDT nécessite de remplacer atomiquement la Map mémoire ET la base IndexedDB. La spec backup.js importe `lattice.js` (fusion) et `store.js`, mais store.js n'offrait que `reg`/`cancel` unitaires. Décision : ajout de `loadAllPointages(newMap)` qui : clear la Map mémoire, la repeuple, clear l'objectStore `pointages`, puis put chaque entrée dans une transaction readwrite. L'atomicité est celle de la transaction IndexedDB — pas de bulk DEXie.
+
+### Import/export sur l'écran Liste, pas Réglages (étape 14)
+La spec §12 étape 13 dit « Écrans Liste + Réglages » mais l'écran Réglages était déjà complet (étape 12) sans import/export. Décision : exporter/importer est sur l'écran Liste, pas de modification intrusive du screen-setup.js existant. La fonction `importerFusion(store, json)` dans backup.js orchestre : deserialiser → fusion(lattice) → loadAllPointages.
+
+### `importerFichier` et `exporterFichier` dans backup.js (étape 14)
+Ces deux fonctions sont DOM-only (créent un `<a download>` ou un `<input type="file">`). La spec décrit backup.js comme module de sérialisation ; les fonctions navigateur y vivent pour centraliser toute la logique d'import. `importerFichier()` retourne une Promise<string> du contenu texte, pas le résultat parsé — le découplage permet de tester `deserialiser` sans DOM.
+
+### `filtrerParticipants` exporté avec module-level `_previousFiltered` (étape 14)
+La monotonie (D1) est garantie par un cache module-level `_previousFiltered`. La fonction est exportée pour les tests ; `resetFilter()` est appelée au début de chaque test. `screenList()` appelle `resetFilter()` à chaque rendu initial, et `refresh()` aussi. Le cache est préservé entre les appels de `filtrerParticipants` dans un même rendu, ce qui réalise la monotonie : chaque frappe restreint le set précédent.
+
 ### Portrait choisi sans mesure réelle (étape 11)
 Tableau d'essai créé (`test/tableau-essai.html`) mais pas imprimé. Décision : portrait. Si l'impression montre un problème → `@page landscape`.
 
@@ -161,6 +174,11 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 - Tests DOM de `screen-setup.test.js` (8 tests P1-P8) uniquement navigateur.
 - `feedback.js` : dette AudioContext — `await ctx.resume()` + un seul contexte réutilisé (piège iOS).
 - `badges.js` : `test/badges-print.html` est une page de prévisualisation hors spec, à supprimer ou intégrer dans `main.js` quand le routeur existera.
+- `screen-list.js` : pas de styles CSS dédiés (utilise les styles navigateur par défaut pour le tableau). CSS à ajouter si l'UI doit être présentable.
+- `screen-list.js` : la confirmation d'annulation utilise `confirm()` natif (modal bloquant). Une modale personnalisée serait plus jolie mais ajoute du code DOM.
+- `screen-list.js` : `formatTau` dupliqué (séparateur `h` au lieu de `:` comme dans screen-scan.js). Troisième copie de la même fonction (screen-scan.js `:`, screen-report.js `h`, screen-list.js `h`).
+- `backup.js` : `exporterFichier` et `importerFichier` non testables en Node (manque DOM). Les tests DOM ne passent qu'au navigateur.
+- `backup.js` : `importerFusion` suppose que store a `loadAllPointages`. Si `store.clearAll()` est ajouté plus tard, refactorer pour l'utiliser.
 
 ---
 
@@ -184,6 +202,10 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 16. **`rowspan=16` est dans le `tbody` (1ʳᵉ ligne), pas dans le `thead`.**
 17. **Playwright ne peut pas se connecter si le serveur Python est tué entre deux appels bash.**
 18. **`qrcode(typeNumber, errorCorrectionLevel)` est une factory, pas un constructeur.** Appeler sans `new`. `typeNumber=1` force la version 1 — `make()` saute l'auto-détection seulement si `typeNumber >= 1`. Passer `'Alphanumeric'` en mode `addData` ou la bibliothèque peut choisir Byte et forcer la version 2.
+19. **`confirm()` bloquant vs event loop.** Les `confirm()` natifs bloquent tout — pas de problème pour l'UX en salle mais empêche les tests automatisés de l'annulation (pas de mock de `window.confirm` dans le harnais).
+20. **Module-level state dans screen-list.js.** `_previousFiltered` est module-level et persiste entre les appels de `filtrerParticipants`. Chaque test doit appeler `resetFilter()` explicitement, sinon les résultats des tests suivants deviennent indéterministes.
+21. **`importerFichier()`/`exporterFichier()` dépendent du DOM.** Créent et cliquent des éléments HTML (`<a download>`, `<input type="file">`). Non testables en Node, ni dans le harnais actuel (pas de simulation de file dialog).
+22. **`loadAllPointages` non atomique au niveau applicatif.** Si le navigateur plante entre `os.clear()` et le premier `os.put()`, les données sont perdues. Acceptable en PWA avec service worker (pas de crash intempestif en salle).
 
 ---
 
@@ -193,8 +215,6 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 - ⚠️ Test physique badges : imprimer `http://localhost:8000/test/badges-print.html`, découper, scanner avec l'app
 - ⚠️ Test métrologie rapport : imprimer sur imprimante réelle, mesurer les largeurs
 - `main.js` (routeur d'écrans, câblage `hydrateConfig` + `precalcChecksums`)
-- `screen-list.js` (liste chronologique D1–D4)
-- `backup.js` (export/import JSON, fusion CRDT)
 - `store.clearAll()` + 6 champs modifiables dans screen-setup.js
 - `sw.js` + `manifest.webmanifest` (PWA, précache)
 - Déploiement HTTPS (Netlify/GitHub Pages) + installation Android/iOS
