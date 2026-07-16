@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Test métrologique — Rapport</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<script type="module">
+import { screenReport } from './js/ui/screen-report.js';
+import { PARTICIPANTS } from './js/data.js';
+import { idDe } from './js/model/ident.js';
+
+const TZ = 60 * 60 * 1000;
+const J1_MATIN = { date: '2026-08-04', creneau: 'matin' };
+const J1_MIDI  = { date: '2026-08-04', creneau: 'midi' };
+const J2_MATIN = { date: '2026-08-05', creneau: 'matin' };
+const J2_MIDI  = { date: '2026-08-05', creneau: 'midi' };
+const J3_MATIN = { date: '2026-08-06', creneau: 'matin' };
+const J3_MIDI  = { date: '2026-08-06', creneau: 'midi' };
+
+function douala(y, m, d, h, min) {
+  return Date.UTC(y, m, d, h, min) - TZ;
+}
+
+function pv(gen, statut, tau, mode, device, override) {
+  return { generation: gen, statut, tau, mode, device, override };
+}
+
+function cle(p, slot) {
+  return idDe(p.numero) + '|' + slot.date + '|' + slot.creneau;
+}
+
+const m = new Map();
+m.set(cle(PARTICIPANTS[0], J1_MATIN), pv(0, 'actif', douala(2026, 7, 4, 8, 5), 'scan', 'd1', 'auto'));
+m.set(cle(PARTICIPANTS[0], J1_MIDI), pv(0, 'actif', douala(2026, 7, 4, 14, 5), 'scan', 'd1', 'auto'));
+m.set(cle(PARTICIPANTS[1], J1_MATIN), pv(0, 'actif', douala(2026, 7, 4, 8, 10), 'scan', 'd1', 'auto'));
+m.set(cle(PARTICIPANTS[2], J1_MIDI), pv(0, 'actif', douala(2026, 7, 4, 14, 15), 'scan', 'd1', 'auto'));
+m.set(cle(PARTICIPANTS[3], J1_MATIN), pv(0, 'actif', douala(2026, 7, 4, 8, 20), 'scan', 'd1', 'auto'));
+m.set(cle(PARTICIPANTS[3], J2_MATIN), pv(0, 'actif', douala(2026, 7, 5, 8, 25), 'scan', 'd1', 'auto'));
+for (let i = 4; i < 8; i++) {
+  m.set(cle(PARTICIPANTS[i], J1_MATIN), pv(0, 'actif', douala(2026, 7, 4, 8, 30 + i), 'scan', 'd1', 'auto'));
+}
+for (let i = 8; i < 12; i++) {
+  m.set(cle(PARTICIPANTS[i], J1_MIDI), pv(0, 'actif', douala(2026, 7, 4, 14, 0 + i), 'scan', 'd1', 'auto'));
+}
+m.set(cle(PARTICIPANTS[12], J1_MATIN), pv(0, 'actif', douala(2026, 7, 4, 8, 55), 'scan', 'd1', 'auto'));
+m.set(cle(PARTICIPANTS[12], J3_MATIN), pv(0, 'actif', douala(2026, 7, 6, 8, 0), 'scan', 'd1', 'auto'));
+m.set(cle(PARTICIPANTS[13], J1_MATIN), pv(1, 'annule', douala(2026, 7, 4, 8, 12), 'scan', 'd1', 'auto'));
+
+const tNow = douala(2026, 7, 4, 18, 0);
+const container = document.getElementById('app');
+screenReport(container, m, tNow);
+</script>
+<div id="app"></div>
+</body>
+</html>

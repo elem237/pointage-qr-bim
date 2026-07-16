@@ -21,7 +21,7 @@ correspondantes en cas de conflit.
 - Les réglages runtime vivent dans le store `meta`, clé `'reglages'`.
 - `getConfig()` → `{ ...DEFAULTS, ...(meta.reglages ?? {}) }`.
 - Tous les modules appellent `getConfig()`, jamais `DEFAULTS` directement.
-- Modifiables : `H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `DEBOUNCE_MS`,
+- Modifiables : `DATES`, `H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `DEBOUNCE_MS`,
   `BADGES_PAR_PAGE`, `MULTI_APPAREILS`. Les autres invalideraient les badges.
 - Ajout de `MULTI_APPAREILS: false` (défaut).
 
@@ -180,7 +180,7 @@ export function getConfig() {
 }
 ```
 
-**Modifiables depuis l'écran Réglages** : `H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `DEBOUNCE_MS`, `BADGES_PAR_PAGE`, `MULTI_APPAREILS`. Les autres sont figées ; les changer invalide les badges déjà imprimés.
+**Modifiables depuis l'écran Réglages** : `DATES`, `H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `DEBOUNCE_MS`, `BADGES_PAR_PAGE`, `MULTI_APPAREILS`. Les autres sont figées ; les changer invalide les badges déjà imprimés.
 
 > **`SEL` n'est pas un secret.** Il est lisible dans le bundle JS par quiconque ouvre les outils de développement — c'est inhérent à une PWA, pas un défaut de paramétrage. Il sert à la **détection d'erreur** (QR étranger, badge d'un autre lot), pas à la sécurité. Le seul anti-fraude réel est l'opérateur qui voit le nom s'afficher (§8.4).
 

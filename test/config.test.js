@@ -1,4 +1,4 @@
-import { DEFAULTS, getConfig, hydrateConfig } from '../js/config.js';
+import { DEFAULTS, getConfig, hydrateConfig, mergeConfig } from '../js/config.js';
 import { test, assert, assertEq } from './harness.js';
 
 test('DEFAULTS est gel\u00e9 (Object.freeze)', () => {
@@ -12,7 +12,7 @@ test('DEFAULTS est gel\u00e9 (Object.freeze)', () => {
 test('getConfig() === DEFAULTS sans hydrateConfig', () => {
   const c = getConfig();
   assertEq(c.PREFIXE_ID, DEFAULTS.PREFIXE_ID);
-  assertEq(c.H_BASCULE, '12:30');
+  assertEq(c.H_BASCULE, '13:00');
   assertEq(c.MULTI_APPAREILS, false);
   assert(c !== DEFAULTS, 'getConfig() should return a new object');
 });
@@ -23,14 +23,23 @@ test('hydrateConfig surcharge sans muter DEFAULTS', () => {
   assertEq(c.H_BASCULE, '13:00');
   assertEq(c.MULTI_APPAREILS, true);
   assertEq(c.PREFIXE_ID, 'BIM26-', 'PREFIXE_ID should remain default');
-  assertEq(DEFAULTS.H_BASCULE, '12:30', 'DEFAULTS should not be mutated');
+  assertEq(DEFAULTS.H_BASCULE, '13:00', 'DEFAULTS should not be mutated');
 });
 
 test('hydrateConfig remplace completement les overrides', () => {
   hydrateConfig({ DEBOUNCE_MS: 5000 });
   const c = getConfig();
   assertEq(c.DEBOUNCE_MS, 5000);
-  assertEq(c.H_BASCULE, '12:30', 'H_BASCULE should be back to default after override replace');
+  assertEq(c.H_BASCULE, '13:00', 'H_BASCULE should be back to default after override replace');
+});
+
+test('mergeConfig fusionne partiellement sans ecraser les autres overrides', () => {
+  hydrateConfig({ MULTI_APPAREILS: true });
+  mergeConfig({ DEBOUNCE_MS: 5000 });
+  const c = getConfig();
+  assertEq(c.MULTI_APPAREILS, true, 'MULTI_APPAREILS preserve');
+  assertEq(c.DEBOUNCE_MS, 5000, 'DEBOUNCE_MS added');
+  assertEq(c.H_BASCULE, '13:00', 'H_BASCULE untouched');
 });
 
 test('getConfig() retourne une copie fraiche a chaque appel', () => {

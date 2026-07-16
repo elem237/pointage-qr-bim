@@ -10,9 +10,9 @@ export const DEFAULTS = Object.freeze({
   DATES:   ['2026-08-04', '2026-08-05', '2026-08-06'],
   TZ_OFFSET_MIN: 60,
 
-  H_DEBUT_MATIN: '06:00',
-  H_BASCULE:     '12:30',
-  H_FIN_MIDI:    '19:00',
+  H_DEBUT_MATIN: '07:00',
+  H_BASCULE:     '13:00',
+  H_FIN_MIDI:    '17:30',
 
   FREQ_HZ:      10,
   DEBOUNCE_MS:  3000,
@@ -28,6 +28,11 @@ let _overrides = {};
 
 export function hydrateConfig(o) {
   _overrides = { ...o };
+}
+
+/** Fusionne un objet partiel dans les overrides existants. */
+export function mergeConfig(partial) {
+  _overrides = { ..._overrides, ...partial };
 }
 
 export function getConfig() {

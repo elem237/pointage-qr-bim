@@ -1,3 +1,7 @@
+## Hiérarchie des sources
+AGENTS.md > SKILL.md > AJOUT.md > SPECIFICATIONS.md > FORMALISATION_MATHEMATIQUE_v2.md
+PÉRIMÉS, ne pas suivre : SPECIFICATIONS.md §10 (→ SKILL.md) et les heures du §3 (→ AJOUT.md v2).
+
 # Règles du projet — Pointage QR BIM
 
 `SPECIFICATIONS.md` fait foi pour le code. `FORMALISATION_MATHEMATIQUE_v2.md`

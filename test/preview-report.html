@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aperçu Rapport — Étape 11</title>
+<link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+
+<div id="report-container"></div>
+
+<script type="module">
+import { screenReport } from '../js/ui/screen-report.js';
+import { PARTICIPANTS } from '../js/data.js';
+import { getConfig } from '../js/config.js';
+import { idDe } from '../js/model/ident.js';
+
+const cfg = getConfig();
+const TZ = cfg.TZ_OFFSET_MIN * 60 * 1000;
+function douala(y, m, d, h, min) {
+  return Date.UTC(y, m, d, h, min) - TZ;
+}
+
+function pv(generation, statut, tau, mode, device, override) {
+  return { generation, statut, tau, mode, device, override };
+}
+
+function cle(p, date, creneau) {
+  return idDe(p.numero) + '|' + date + '|' + creneau;
+}
+
+const pointages = new Map();
+
+// Simule des pointages réalistes pour l'aperçu
+const preset = [
+  { pIdx: 0,  matin: '08h42', midi: '13h05' },
+  { pIdx: 1,  matin: null,    midi: null    },
+  { pIdx: 2,  matin: '08h30', midi: '13h00' },
+  { pIdx: 3,  matin: '08h45', midi: null    },
+  { pIdx: 4,  matin: '09h12', midi: '13h30' },
+  { pIdx: 5,  matin: null,    midi: '13h15' },
+  { pIdx: 6,  matin: '08h33', midi: '12h55' },
+  { pIdx: 7,  matin: '09h05', midi: null    },
+  { pIdx: 8,  matin: null,    midi: '12h40' },
+  { pIdx: 9,  matin: '08h50', midi: '13h10' },
+  { pIdx: 10, matin: '09h20', midi: '14h00' },
+  { pIdx: 11, matin: '08h40', midi: null    },
+  { pIdx: 12, matin: null,    midi: '13h20' },
+  { pIdx: 13, matin: '08h38', midi: '13h02' },
+  { pIdx: 14, matin: '08h51', midi: null    },
+  { pIdx: 15, matin: '08h48', midi: '13h08' },
+];
+
+function hms(str) {
+  const [h, m] = str.split('h').map(Number);
+  return h * 3600000 + m * 60000;
+}
+
+const dates = cfg.DATES;
+
+preset.forEach(({ pIdx, matin, midi }) => {
+  const p = PARTICIPANTS[pIdx];
+  if (matin) {
+    const tau = douala(2026, 7, 4, 0, 0) + hms(matin);
+    pointages.set(cle(p, dates[0], 'matin'), pv(0, 'actif', tau, 'scan', 'd1', 'auto'));
+  }
+  if (midi) {
+    const tau = douala(2026, 7, 4, 0, 0) + hms(midi);
+    pointages.set(cle(p, dates[0], 'midi'), pv(0, 'actif', tau, 'scan', 'd1', 'auto'));
+  }
+});
+
+// J1 18h00 = tout J1 échu, J2/J3 pas encore
+screenReport(document.getElementById('report-container'), pointages, douala(2026, 7, 4, 18, 0));
+</script>
+
+<p style="margin-top:12pt;font-size:8pt;color:#999;text-align:center;">
+  Aperçu du rapport généré par <code>screen-report.js</code> — J1 (04/08) avec pointages simulés.<br>
+  Ctrl+P / Cmd+P → A4 portrait, marges 15 mm, échelle 100 %.
+</p>
+
+</body>
+</html>

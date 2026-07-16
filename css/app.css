@@ -1,200 +1,58 @@
-/* ── Écran Rapport (E4) — spec §10 ── */
+/* ── Écran Rapport (SKILL.md) — reproduction exacte du document source ── */
 
-/* ── Écran ── */
-#screen-report {
-  max-width: 210mm;
-  margin: 0 auto;
-  padding: 8px;
-  font-family: "Arial Narrow", Arial, sans-serif;
-  font-size: 8pt;
-  line-height: 1.15;
-  color: #000;
-  background: #fff;
-}
+@page { size: A4 portrait; margin: 0; }
 
-/* ── En-tête ── */
-.report-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8pt;
-}
-.report-header-left,
-.report-header-center,
-.report-header-right {
-  width: 30%;
-}
-.report-header-left { text-align: left; }
-.report-header-center { text-align: center; }
-.report-header-right { text-align: right; }
-.report-header img {
-  max-height: 40px;
-  width: auto;
-}
-.report-bullets {
-  font-size: 6pt;
-  line-height: 1.3;
-  color: #333;
-}
-.report-header-right {
-  position: relative;
-}
-.report-header-corner {
+.page { position: relative; width: 210mm; height: 297mm; }
+
+.band { position: absolute; left: 0; width: 210mm; display: block; }
+.band:first-child { top: 0; height: 54mm; }
+.band.footer { top: 262mm; height: 35mm; }
+
+table.presence {
   position: absolute;
-  top: -4pt;
-  right: 0;
-  display: flex;
-  gap: 2pt;
-  align-items: flex-start;
-}
-.report-header-qr {
-  width: 28px;
-  height: auto;
-}
-.report-header-3d {
-  width: 14px;
-  height: auto;
-}
-
-/* ── Titre ── */
-.report-title {
-  text-align: center;
-  font-size: 11pt;
-  font-weight: bold;
-  color: #1a237e;
-  text-decoration: underline;
-  margin-bottom: 6pt;
-}
-
-/* ── Tableau ── */
-.report-table {
-  width: 100%;
-  border-collapse: collapse;
+  top: 56.13mm;
+  left: 9.91mm;
+  width: 160.02mm;
   table-layout: fixed;
-}
-.report-table th,
-.report-table td {
-  border: 1px solid #000;
-  padding: 1.5pt 1.5pt;
-  vertical-align: top;
-  text-align: center;
-}
-.report-table thead th {
-  background: #e8eaf6;
-  font-weight: bold;
-  font-size: 7pt;
-}
-
-/* En-tête direction */
-.report-dir-header {
-  background: #c5cae9;
-  font-size: 8pt;
-  font-weight: bold;
-  text-align: center;
-}
-
-/* Cellules */
-.report-cell-p {
-  font-weight: bold;
-  font-size: 8pt;
-}
-.report-cell-h {
-  font-size: 6.5pt;
-  color: #333;
-}
-.report-cell-a {
-  font-weight: bold;
-  color: #c00;
-}
-.report-cell-name {
-  text-align: left;
-  padding-left: 2pt;
-  font-size: 7pt;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.report-cell-theme {
-  font-size: 6pt;
-  text-align: left;
-  padding: 2pt;
-  writing-mode: vertical-lr;
-  text-orientation: mixed;
-}
-.report-cell-lieu {
-  font-size: 8pt;
-  font-weight: bold;
-}
-.report-cell-effectif {
-  font-size: 10pt;
-  font-weight: bold;
-}
-.report-cell-num {
-  font-weight: bold;
-  font-size: 8pt;
-}
-
-/* ── Stats (écran uniquement, pas dans le PDF) ── */
-.report-stats {
-  margin-top: 8pt;
-  font-size: 8pt;
-  line-height: 1.4;
-}
-.report-stats table {
-  width: auto;
   border-collapse: collapse;
+  font-family: "Aptos Display", "Aptos", "Carlito", "Calibri", sans-serif;
+  font-size: 10pt;
 }
-.report-stats th,
-.report-stats td {
-  border: 1px solid #999;
-  padding: 2pt 6pt;
-  font-size: 7pt;
-}
-.report-stats th {
-  background: #f5f5f5;
-}
+table.presence td { border: 0.5pt solid #000; vertical-align: middle; padding: 0 1mm; }
 
-/* ── Impression ── */
+tr.r0 { height: 5.08mm; }
+tr.r1 { height: 8.47mm; }
+tr.r2 { height: 8.38mm; }
+tr.p  { height: 8.78mm; }
+
+.vert  { background: #E2EFD9; }
+.r0 td { background: #E2EFD9; font-weight: bold; text-align: center; }
+.h     { font-weight: bold; text-align: center; }
+.theme { font-weight: bold; text-align: center; }
+.lieu, .eff { text-align: center; }
+.perso { text-align: justify; padding-left: 5.6mm; text-indent: -4.6mm; }
+
+.cell-jour { text-align: center; padding: 0 0.3mm; line-height: 1.05; }
+.cell-jour .pa    { font-size: 8pt; display: block; }
+.cell-jour .heure { font-size: 7pt; display: block; }
+
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 15mm;
-  }
-
-  body {
-    margin: 0;
-    padding: 0;
-  }
-
-  #screen-report {
-    max-width: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .report-table thead {
-    display: table-header-group;
-  }
-
-  .report-table tbody tr {
-    break-inside: avoid;
-  }
-
-  .report-stats {
-    display: none;
-  }
-
-  /* Cacher tout ce qui n'est pas le rapport */
-  body > *:not(#screen-report) {
-    display: none !important;
-  }
-
-  .report-table th,
-  .report-table td {
-    border-color: #000;
-  }
-
-  .report-header img {
-    max-height: 48px;
-  }
+  body { margin: 0; }
+  table.presence { break-inside: avoid; }
+  tr { break-inside: avoid; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ── Écran Réglages ── */
+#screen-setup { max-width: 600px; margin: 1em auto; padding: 1em; font-family: sans-serif; }
+#screen-setup h2 { margin-top: 0; }
+#screen-setup section { margin: 1em 0; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; }
+#screen-setup .setup-dates { display: flex; gap: 0.5em; flex-wrap: wrap; }
+#screen-setup .setup-dates label { display: flex; flex-direction: column; font-size: 0.85em; }
+#screen-setup .setup-dates input { margin-top: 0.2em; }
+.setup-banner.warning {
+  background: #c00; color: #fff; font-weight: bold; text-align: center;
+  padding: 0.5em; font-size: 1.1em;
+}
+#screen-setup .danger { background: #c00; color: #fff; border: none; padding: 0.5em 1em; font-weight: bold; cursor: pointer; }
+#screen-setup .danger:disabled { background: #ccc; cursor: not-allowed; }

@@ -5,17 +5,14 @@ import { getConfig } from '../js/config.js';
 
 // ─── helpers ─────────────────────────────────────────────
 
-const D = (y, m, d, h, min) => Date.UTC(y, m, d, h, min);
-
 const cfg = getConfig();
-const TZ = cfg.TZ_OFFSET_MIN * 60 * 1000; // ms offset
+const TZ = cfg.TZ_OFFSET_MIN * 60 * 1000;
 
 /** epoch ms for a given Douala (UTC+1) date+time */
 function douala(y, m, d, h, min) {
   return Date.UTC(y, m, d, h, min) - TZ;
 }
 
-/** 16 participants — reference */
 const P = [
   { numero: 1,  nomComplet: "YEBGA Jacques Albert" },
   { numero: 2,  nomComplet: "ANYOUZO'A Marc Thyrille" },
@@ -61,36 +58,33 @@ test('E1.1 — participant actif → present avec tau', () => {
   assertEq(r.tau, douala(2026, 7, 4, 8, 42));
 });
 
-test('E1.2 — pas de pointage + tNow ≥ finDe → absent', () => {
-  // J1 matin ends at 12:30 Douala; tNow = 18:00 Douala → ended
+test('E1.2 — pas de pointage + tNow \u2265 finDe → absent', () => {
   const r = etatCellule(new Map(), P[0], J1_MATIN, douala(2026, 7, 4, 18, 0));
   assertEq(r.type, 'absent');
 });
 
 test('E1.3 — pas de pointage + tNow < finDe → vide', () => {
-  // J1 midi ends at 19:00 Douala; tNow = 18:00 Douala → not ended
-  const r = etatCellule(new Map(), P[0], J1_MIDI, douala(2026, 7, 4, 18, 0));
+  const r = etatCellule(new Map(), P[0], J1_MIDI, douala(2026, 7, 4, 15, 0));
   assertEq(r.type, 'vide');
 });
 
-test('E1.4 — annulé + tNow ≥ finDe → absent (tombstone transparent)', () => {
-  // §12: "Le tombstone est transparent au rapport"
+test('E1.4 — annul\u00e9 + tNow \u2265 finDe → absent (tombstone transparent)', () => {
   const m = new Map([
     [cle(P[0], J1_MATIN), pv(1, 'annule', douala(2026, 7, 4, 8, 42), 'scan', 'd1', 'auto')],
   ]);
   const r = etatCellule(m, P[0], J1_MATIN, douala(2026, 7, 4, 18, 0));
-  assertEq(r.type, 'absent', 'annulé après finDe → absent');
+  assertEq(r.type, 'absent', 'annul\u00e9 apr\u00e8s finDe → absent');
 });
 
-test('E1.5 — annulé + tNow < finDe → vide', () => {
+test('E1.5 — annul\u00e9 + tNow < finDe → vide', () => {
   const m = new Map([
     [cle(P[0], J1_MIDI), pv(1, 'annule', douala(2026, 7, 4, 13, 5), 'scan', 'd1', 'auto')],
   ]);
   const r = etatCellule(m, P[0], J1_MIDI, douala(2026, 7, 4, 15, 0));
-  assertEq(r.type, 'vide', 'annulé avant finDe → vide');
+  assertEq(r.type, 'vide', 'annul\u00e9 avant finDe → vide');
 });
 
-test('E1.6 — présent pour un participant, absent pour un autre', () => {
+test('E1.6 — pr\u00e9sent pour un participant, absent pour un autre', () => {
   const m = new Map([
     [cle(P[0], J1_MATIN), pv(0, 'actif', douala(2026, 7, 4, 8, 42), 'scan', 'd1', 'auto')],
   ]);
@@ -100,80 +94,72 @@ test('E1.6 — présent pour un participant, absent pour un autre', () => {
   assertEq(r2.type, 'absent');
 });
 
-test('E1.7 — propriété 8.2 : 0 absent sur J2/J3 à tNow = J1 18:00', () => {
-  // 🔴 spec §12 "0 absence future"
+test('E1.7 — propri\u00e9t\u00e9 8.2 : 0 absent sur J2/J3 \u00e0 tNow = J1 18:00', () => {
   const tNow = douala(2026, 7, 4, 18, 0);
   const slots = [J2_MATIN, J2_MIDI, J3_MATIN, J3_MIDI];
   for (const slot of slots) {
     for (const p of P) {
       const r = etatCellule(new Map(), p, slot, tNow);
-      assertEq(r.type, 'vide', `${p.numero} @ ${slot.date}/${slot.creneau} doit être vide`);
+      assertEq(r.type, 'vide', `${p.numero} @ ${slot.date}/${slot.creneau} doit \u00eatre vide`);
     }
   }
 });
 
-test('E1.8 — propriété 8.2 : absent après fin du dernier créneau', () => {
-  // Après la fin du dernier créneau (J3 midi 19:00), tous sont absents
-  const tNow = douala(2026, 7, 6, 20, 0); // after J3 midi ends at 19:00
+test('E1.8 — propri\u00e9t\u00e9 8.2 : absent apr\u00e8s fin du dernier cr\u00e9neau', () => {
+  const tNow = douala(2026, 7, 6, 20, 0);
   for (const slot of [J1_MATIN, J1_MIDI, J2_MATIN, J2_MIDI, J3_MATIN, J3_MIDI]) {
     const r = etatCellule(new Map(), P[0], slot, tNow);
-    assertEq(r.type, 'absent', `doit être absent pour ${slot.date}/${slot.creneau}`);
+    assertEq(r.type, 'absent', `doit \u00eatre absent pour ${slot.date}/${slot.creneau}`);
   }
 });
 
 test('E1.9 — garde sur finDe(s) PAS sur debutDe(s)', () => {
-  // Début du matin le J1 : 06:00. Si on testait debutDe, un rapport à 10h
-  // dirait absent. Avec finDe, à 10h c'est encore vide (fin à 12:30).
-  const tNow = douala(2026, 7, 4, 10, 0); // 10:00 Douala, matin en cours
+  const tNow = douala(2026, 7, 4, 10, 0);
   const r = etatCellule(new Map(), P[0], J1_MATIN, tNow);
   assertEq(r.type, 'vide', 'matin en cours → vide, pas absent');
 });
 
 // ─── finDe ───────────────────────────────────────────────
 
-test('E2.1 — finDe matin = H_BASCULE sur la date', () => {
+test('E2.1 — finDe matin = H_BASCULE (13:00) sur la date', () => {
   const f = finDe(J1_MATIN);
-  const expected = douala(2026, 7, 4, 12, 30); // H_BASCULE
+  const expected = douala(2026, 7, 4, 13, 0);
   assertEq(f, expected);
 });
 
-test('E2.2 — finDe midi = H_FIN_MIDI sur la date', () => {
+test('E2.2 — finDe midi = H_FIN_MIDI (17:30) sur la date', () => {
   const f = finDe(J1_MIDI);
-  const expected = douala(2026, 7, 4, 19, 0); // H_FIN_MIDI
+  const expected = douala(2026, 7, 4, 17, 30);
   assertEq(f, expected);
 });
 
 test('E2.3 — finDe J2 matin', () => {
   const f = finDe(J2_MATIN);
-  const expected = douala(2026, 7, 5, 12, 30);
+  const expected = douala(2026, 7, 5, 13, 0);
   assertEq(f, expected);
 });
 
 // ─── slotsEchus ──────────────────────────────────────────
 
-test('E2.4 — slotsEchus vide avant le premier créneau', () => {
-  // 2026-08-04 05:00 Douala — avant H_DEBUT_MATIN (06:00)
+test('E2.4 — slotsEchus vide avant le premier cr\u00e9neau', () => {
   const s = slotsEchus(douala(2026, 7, 4, 5, 0));
-  assertEq(s.length, 0, '0 slots échus');
+  assertEq(s.length, 0, '0 slots \u00e9chus');
 });
 
-test('E2.5 — slotsEchus = [J1 matin] après matin et avant midi', () => {
-  // 2026-08-04 12:31 Douala — matin fini (12:30), midi pas fini (19:00)
-  const s = slotsEchus(douala(2026, 7, 4, 12, 31));
+test('E2.5 — slotsEchus = [J1 matin] apr\u00e8s matin et avant midi', () => {
+  const s = slotsEchus(douala(2026, 7, 4, 14, 0));
   assertEq(s.length, 1);
   assertEq(s[0].date, '2026-08-04');
   assertEq(s[0].creneau, 'matin');
 });
 
-test('E2.6 — slotsEchus = [J1 matin, J1 midi] après J1 midi et avant J2', () => {
-  // 2026-08-04 19:01 Douala — J1 fini
-  const s = slotsEchus(douala(2026, 7, 4, 19, 1));
+test('E2.6 — slotsEchus = [J1 matin, J1 midi] apr\u00e8s J1 midi et avant J2', () => {
+  const s = slotsEchus(douala(2026, 7, 4, 19, 0));
   assertEq(s.length, 2);
 });
 
-test('E2.7 — slotsEchus = 6 slots après J3 midi', () => {
-  // Après 2026-08-06 19:00 Douala
-  const s = slotsEchus(douala(2026, 7, 6, 19, 1));
+test('E2.7 — slotsEchus = 6 slots apr\u00e8s J3 midi', () => {
+  const s = slotsEchus(douala(2026, 7, 6, 19, 0));
   assertEq(s.length, 6);
 });
 
@@ -185,14 +171,14 @@ test('E2.8 — presents = 0 quand personne', () => {
   assertEq(n, 0);
 });
 
-test('E2.9 — presents = 1 avec un participant présent', () => {
+test('E2.9 — presents = 1 avec un participant pr\u00e9sent', () => {
   const m = new Map([
     [cle(P[0], J1_MATIN), pv(0, 'actif', 1000, 'scan', 'd1', 'auto')],
   ]);
   assertEq(presents(m, J1_MATIN), 1);
 });
 
-test('E2.10 — presents ignore les annulés', () => {
+test('E2.10 — presents ignore les annul\u00e9s', () => {
   const m = new Map([
     [cle(P[0], J1_MATIN), pv(1, 'annule', 1000, 'scan', 'd1', 'auto')],
     [cle(P[1], J1_MATIN), pv(0, 'actif', 2000, 'scan', 'd2', 'auto')],
@@ -200,7 +186,7 @@ test('E2.10 — presents ignore les annulés', () => {
   assertEq(presents(m, J1_MATIN), 1);
 });
 
-test('E2.11 — presents = 16 avec tous présents', () => {
+test('E2.11 — presents = 16 avec tous pr\u00e9sents', () => {
   const m = new Map();
   for (const p of P) {
     m.set(cle(p, J1_MATIN), pv(0, 'actif', 1000 + p.numero, 'scan', 'd1', 'auto'));
@@ -210,11 +196,11 @@ test('E2.11 — presents = 16 avec tous présents', () => {
 
 // ─── taux ────────────────────────────────────────────────
 
-test('E2.12 — taux = 0 quand aucun présent', () => {
+test('E2.12 — taux = 0 quand aucun pr\u00e9sent', () => {
   assertEq(taux(new Map(), J1_MATIN), 0);
 });
 
-test('E2.13 — taux = 1 quand tous présents', () => {
+test('E2.13 — taux = 1 quand tous pr\u00e9sents', () => {
   const m = new Map();
   for (const p of P) m.set(cle(p, J1_MATIN), pv(0, 'actif', 1000, 'scan', 'd1', 'auto'));
   assertEq(taux(m, J1_MATIN), 1);
@@ -230,38 +216,29 @@ test('E2.14 — taux = 0.5 pour 8/16', () => {
 
 // ─── theta ───────────────────────────────────────────────
 
-test('E2.15 — theta = null quand aucun slot échu', () => {
-  // 2026-08-04 05:00 — avant tout créneau
+test('E2.15 — theta = null quand aucun slot \u00e9chu', () => {
   const m = new Map();
   assertEq(theta(m, douala(2026, 7, 4, 5, 0)), null);
 });
 
-test('E2.16 — theta = 1 avec 100% sur 1 slot échu', () => {
-  // 2026-08-04 12:31 — seul J1 matin échu, tous présents
+test('E2.16 — theta = 1 avec 100% sur 1 slot \u00e9chu', () => {
   const m = new Map();
   for (const p of P) m.set(cle(p, J1_MATIN), pv(0, 'actif', 1000, 'scan', 'd1', 'auto'));
-  const t = theta(m, douala(2026, 7, 4, 12, 31));
+  const t = theta(m, douala(2026, 7, 4, 14, 0));
   assertEq(t, 1);
 });
 
-test('E2.17 — theta = 0.5 avec 50% sur 2 slots échus', () => {
-  // 2026-08-04 19:01 — J1 matin et midi échus
-  // J1 matin: 16/16 présents, J1 midi: 0/16 présents
+test('E2.17 — theta = 0.5 avec 50% sur 2 slots \u00e9chus', () => {
   const m = new Map();
   for (const p of P) m.set(cle(p, J1_MATIN), pv(0, 'actif', 1000, 'scan', 'd1', 'auto'));
-  // J1 midi: personne
-  const t = theta(m, douala(2026, 7, 4, 19, 1));
-  // Σ presents = 16, |slotsEchus| = 2, denominator = 32
-  // 16/32 = 0.5
+  const t = theta(m, douala(2026, 7, 4, 19, 0));
   assertEq(t, 0.5);
 });
 
-test('E2.18 — theta calcule la moyenne sur tous les slots échus', () => {
-  // 2026-08-04 19:01 — J1 matin + midi échus
-  // matin: 16/16, midi: 8/16 → Σ = 24, |slots| = 2, denom = 32 → 24/32 = 0.75
+test('E2.18 — theta calcule la moyenne sur tous les slots \u00e9chus', () => {
   const m = new Map();
   for (const p of P) m.set(cle(p, J1_MATIN), pv(0, 'actif', 1000, 'scan', 'd1', 'auto'));
   for (let i = 0; i < 8; i++) m.set(cle(P[i], J1_MIDI), pv(0, 'actif', 2000, 'scan', 'd1', 'auto'));
-  const t = theta(m, douala(2026, 7, 4, 19, 1));
+  const t = theta(m, douala(2026, 7, 4, 19, 0));
   assertEq(t, 0.75);
 });

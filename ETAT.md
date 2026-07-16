@@ -14,7 +14,8 @@
 | 8 | `feedback.js` — Audio + vibration (C7) | `js/feedback.js`, `test/feedback.test.js` | 8/8 | 2026-07-15 |
 | 9 | Écran Scan — UI + sélecteur Auto/Matin/Midi | `js/ui/screen-scan.js`, `test/screen-scan.test.js` | 16 (22 fonctions pures+imports) | 2026-07-15 |
 | 10 | 🔴 `report.js` — etatCellule, stats | `js/model/report.js`, `test/report.test.js` | 18/18 | 2026-07-15 |
-| 11 | Écran Rapport + `@media print` → PDF | `js/ui/screen-report.js`, `css/app.css`, `assets/logos.js`, `test/screen-report.test.js` | 28/28 (183/183 total) | 2026-07-15 |
+| 11 | Écran Rapport + `@media print` → PDF | `js/ui/screen-report.js`, `css/app.css`, `assets/logos.js`, `test/screen-report.test.js`, `test/report-render.test.js` | 28/28 (183/183 total) | 2026-07-15 |
+| 12 | Écran Réglages — DATES modifiables, Mode test, EFFACER | `js/ui/screen-setup.js`, `js/config.js`, `css/app.css`, `test/screen-setup.test.js`, `test/config.test.js`, `test/index.html` | 56/56 core (config+slots+report) + 8 DOM-only screen-setup | 2026-07-16 |
 
 ## Décisions prises hors spec
 
@@ -105,8 +106,20 @@ La spec §10 demande d'imprimer un tableau d'essai et de mesurer avant de tranch
 ### formatTau en "h" pour le rapport (pas ":" comme screen-scan)
 Le format d'heure dans le tableau du rapport suit le document source qui montre "08h42" (avec "h"). L'écran de scan utilise "08:42" (avec ":"). Les deux `formatTau` sont dupliqués (`screen-scan.js` et `screen-report.js`) avec des séparateurs différents. Décision : suivre la spec pour chaque contexte.
 
-### screenReport synchrone (pas async)
-Contrairement à `screenScan` qui est async (démarrage caméra), `screenReport` n'a aucune opération asynchrone : elle lit les pointages depuis une Map en mémoire et génère du HTML. Décision : fonction synchrone, retourne un contrôleur avec `refresh()`. Si une étape future nécessite de charger des pointages depuis IndexedDB, l'appelant fera l'await avant d'appeler `screenReport`.
+### `mergeConfig` ajouté pour les mises à jour incrémentales (étape 12)
+`config.js` avait `hydrateConfig(o)` qui remplace `_overrides` en totalité. `screen-setup.js` a besoin de ne changer que `DATES` sans écraser les autres overrides chargés depuis le store `meta`. Décision : ajouter `mergeConfig(partial)` qui fusionne dans `_overrides` existant.
+
+### `screenSetup` synchrone, retourne `{ refresh }` (pas `onSave`)
+Comme `screenReport`, l'écran Réglages n'a pas d'opération async. Le callback `onClearAll` est passé en option. Les changements de dates sont appliqués immédiatement via `mergeConfig` — pas de bouton "Enregistrer". Décision : pas de `onSave` callback, le rendu reflète l'état courant.
+
+### "EFFACER TOUTES LES DONNÉES" via callback (pas d'implémentation directe)
+Le bouton appelle `onClearAll()` s'il est fourni. `store.clearAll()` n'existe pas encore — c'est une dette laissée à l'étape qui implémente la suppression réelle (étape 13+).
+
+### Seulement DATES dans l'écran Réglages (étape 12)
+La spec liste 7 champs modifiables (`DATES`, `H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `DEBOUNCE_MS`, `BADGES_PAR_PAGE`, `MULTI_APPAREILS`). L'étape 12 n'implémente que `DATES`. Les 6 autres seront ajoutés dans une étape ultérieure.
+
+### screen-setup.js retourne `{ refresh }` (pattern screen-report)
+Comme `screenReport`, l'écran Réglages n'a pas d'opération async. Le callback `onClearAll` est passé en option. Les changements de dates sont appliqués immédiatement via `mergeConfig` — pas de bouton "Enregistrer". Le contrôleur `refresh()` permet de resynchroniser les champs après une modification externe des overrides.
 
 ### Logos extraits du .docx `LISTE DE PRÉSENCE.docx`
 Les 5 logos (LOGO_GREEN, LOGO_ACCA, LOGO_ICON, LOGO_3D, LOGO_QR) ont été extraits du document source et intégrés dans `assets/logos.js`. Le visuel 3D et le QR décoratif ne sont plus manquants. Le tableau du rapport a été réécrit pour matcher la structure 8 colonnes du .docx (N°, THÈMES, LIEU, PERSONNELS, EFFECTIFS, Jour 1-3), avec `colspan="8"` pour l'en-tête direction et `rowspan=16` sur N°/THÈMES/LIEU/EFFECTIFS dans le tbody.
@@ -135,7 +148,10 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 - `assets/logos.js` : les 5 logos sont extraits du .docx. `LOGO_ICON` (décorateur) n'est pas utilisé dans le rapport actuel — réservé pour un usage futur.
 - `screen-report.js` : `formatTau` dupliqué depuis `screen-scan.js` avec un séparateur "h" au lieu de ":". Si une refactor future centralise les formats, rapprocher les deux.
 - `screen-report.js` : le choix portrait/paysage n'a pas été mesuré sur impression réelle. Le tableau est passé de 11 à 8 colonnes, ce qui réduit la largeur nécessaire. Vérifier sur une vraie imprimante avant le jour J. Si ça ne tient pas, ajouter une classe `.landscape` et changer `@page`.
-- `css/app.css` : les écrans autres que le rapport (scan, liste) n'ont pas encore de styles. Le fichier ne contient que les styles du rapport.
+- `css/app.css` : les écrans autres que le rapport (scan, liste) n'ont pas encore de styles. Le fichier ne contient que les styles du rapport et le setup.
+- `screen-setup.js` : seuls `DATES` sont éditables ; `H_DEBUT_MATIN`, `H_BASCULE`, `H_FIN_MIDI`, `DEBOUNCE_MS`, `BADGES_PAR_PAGE`, `MULTI_APPAREILS` manquent.
+- `store.clearAll()` n'existe pas — le bouton "EFFACER TOUTES LES DONNÉES" attend un callback externe.
+- Les tests DOM de `screen-setup.test.js` (8 tests P1-P8) ne tournent qu'au navigateur (`document.createElement`).
 
 ## Pièges rencontrés
 
@@ -159,12 +175,12 @@ Décision (spécifiée dans la SPEC §5 A1 « Cas limites », confirmée par PAT
 
 ## Prochaine étape
 
-**Étape 12** — `badges.js` — planche A4 de 16 QR en version 1-Q.
-[Pas encore commencée]
-Ce qu'elle attend de l'existant :
-- `ident.js` (`payload()`, `idDe()`, `CHECKSUMS`) pour les données des badges
-- `data.js` (`PARTICIPANTS`) pour les 16 noms
-- `config.js` (`getConfig()` → `QR_EC`, `PREFIXE_ID`, `BADGES_PAR_PAGE`) pour les réglages QR
-- `vendor/qrcode.js` (génération QR, à vendoriser — pas encore créé)
-- `css/app.css` (les styles `@media print` existent déjà depuis l'étape 11)
-- Pas besoin de : `store.js`, `camera.js`, `pipeline.js`, `feedback.js`, `screen-scan.js`, `screen-report.js`, `report.js`, `lattice.js`, `slots.js`, `norm.js`
+À déterminer par l'opérateur. Reste à faire (liste non priorisée) :
+- Ajouter les 6 autres champs modifiables dans screen-setup.js
+- Implémenter `store.clearAll()`
+- `main.js` (routeur d'écrans)
+- `screen-list.js` (liste chronologique)
+- `badges.js` (planche QR)
+- `backup.js` (export/import JSON)
+- Tests métrologie (impression réelle)
+- Déploiement HTTPS + installation Android/iOS
