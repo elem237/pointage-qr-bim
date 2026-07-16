@@ -68,25 +68,27 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   event.respondWith(
     (async () => {
-      try {
-        const cached = await caches.match(event.request);
-        if (cached) return cached;
-        if (event.request.mode === 'navigate') {
+      if (event.request.mode === 'navigate') {
+        try {
+          const res = await fetch(event.request);
+          const cache = await caches.open(CACHE);
+          cache.put('/index.html', res.clone());
+          return res;
+        } catch (_) {
           const index = await caches.match('/index.html');
           if (index) return index;
         }
+        return new Response('Hors ligne', { status: 503 });
+      }
+      const cached = await caches.match(event.request);
+      if (cached) return cached;
+      try {
         const res = await fetch(event.request);
-        if (res.ok) {
-          const cache = await caches.open(CACHE);
-          cache.put(event.request, res.clone());
-        }
+        const cache = await caches.open(CACHE);
+        cache.put(event.request, res.clone());
         return res;
       } catch (_) {
-        if (event.request.mode === 'navigate') {
-          const index = await caches.match('/index.html');
-          if (index) return index;
-        }
-        return new Response('Hors ligne', { status: 503, statusText: 'Hors ligne' });
+        return new Response('Hors ligne', { status: 503 });
       }
     })()
   );
