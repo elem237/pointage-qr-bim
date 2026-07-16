@@ -48,6 +48,20 @@ function appliquerDates(container) {
   mettreAJourBanner(container);
 }
 
+async function getSWStatus() {
+  const info = { sw: false, cache: [], nb: 0 };
+  if ('caches' in self) {
+    try {
+      const c = await caches.open('bim-v3');
+      const keys = await c.keys();
+      info.cache = keys.map(k => new URL(k.url).pathname);
+      info.nb = keys.length;
+    } catch (_) {}
+  }
+  info.sw = navigator.serviceWorker.controller !== null;
+  return info;
+}
+
 export function screenSetup(container, opts = {}) {
   const { onClearAll } = opts;
   const cfg = getConfig();
@@ -76,7 +90,17 @@ export function screenSetup(container, opts = {}) {
     <p><button id="setup-clear-all" class="danger" disabled>EFFACER TOUTES LES DONN\u00c9ES</button></p>
     <p><label>Confirmer en tapant SUPPRIMER : <input type="text" id="setup-confirm-input"></label></p>
   </section>
+  <section>
+    <h3>Service Worker</h3>
+    <pre id="setup-sw-info" style="font-size:10px;white-space:pre-wrap;max-height:200px;overflow:auto;background:#eee;padding:4px">Contrôle SW : ?<br>Objets en cache : ?</pre>
+    <p><button id="setup-sw-refresh">Rafraîchir le statut</button></p>
+  </section>
 </div>`;
+
+  getSWStatus().then(info => {
+    const pre = container.querySelector('#setup-sw-info');
+    pre.innerHTML = `Contrôle SW : ${info.sw ? '✅ actif' : '❌ inactif'}\nObjets en cache : ${info.nb}\n${info.cache.sort().join('\n')}`;
+  });
 
   container.addEventListener('change', (e) => {
     if (e.target.classList.contains('setup-date')) {
@@ -95,6 +119,11 @@ export function screenSetup(container, opts = {}) {
       const inputs = container.querySelectorAll('.setup-date');
       inputs.forEach((inp, i) => { inp.value = DATES_RELLES[i]; });
       appliquerDates(container);
+    } else if (btn.id === 'setup-sw-refresh') {
+      getSWStatus().then(info => {
+        const pre = container.querySelector('#setup-sw-info');
+        pre.innerHTML = `Contrôle SW : ${info.sw ? '✅ actif' : '❌ inactif'}\nObjets en cache : ${info.nb}/${info.cache.length}\n${info.cache.sort().join('\n')}`;
+      });
     } else if (btn.id === 'setup-clear-all') {
       if (typeof onClearAll === 'function') {
         onClearAll();
