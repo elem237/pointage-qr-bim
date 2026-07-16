@@ -16,7 +16,7 @@ function jouerTone(freq, dureeSec, delaySec) {
   const gain = _ctx.createGain();
   osc.type = 'sine';
   osc.frequency.value = freq;
-  gain.gain.setValueAtTime(0.3, t);
+  gain.gain.setValueAtTime(0.7, t);
   gain.gain.exponentialRampToValueAtTime(0.001, t + dureeSec);
   osc.connect(gain);
   gain.connect(_ctx.destination);
