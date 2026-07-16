@@ -18,6 +18,7 @@
 | 12 | Écran Réglages — DATES modifiables, Mode test, EFFACER | `js/ui/screen-setup.js`, `js/config.js`, `css/app.css`, `test/screen-setup.test.js`, `test/config.test.js`, `test/index.html` | 56/56 core + 8 DOM-only | — | 2026-07-16 |
 | 13 | `badges.js` — planche A4 de 16 QR version 1-Q | `vendor/qrcode.js`, `js/badges.js`, `css/app.css`, `test/badges.test.js`, `test/badges-print.html`, `test/index.html` | 12/12 + scan physique BIM26-001-YJ ✅ | claude-opus-4-8 | 2026-07-16 |
 | 14 | Écran Liste + import/export (§9 D1–D4, §6.5) | `js/ui/screen-list.js`, `js/db/backup.js`, `js/db/store.js` (+loadAllPointages), `test/backup.test.js`, `test/screen-list.test.js`, `test/index.html` | 234/234 (10 backup + 15 screen-list) | — | 2026-07-16 |
+| 15 | 🔴 `sw.js`, `manifest` — PWA (cache-first, addAll) | `sw.js`, `manifest.webmanifest`, `index.html`, `js/main.js`, `assets/icon-192.png`, `assets/icon-512.png`, `test/pwa.test.js` | 9 tests 🔴 (statique ✓, navigateur nécessaire) | — | 2026-07-16 |
  
 ---
 
@@ -131,6 +132,21 @@ Ces deux fonctions sont DOM-only (créent un `<a download>` ou un `<input type="
 ### `filtrerParticipants` exporté avec module-level `_previousFiltered` (étape 14)
 La monotonie (D1) est garantie par un cache module-level `_previousFiltered`. La fonction est exportée pour les tests ; `resetFilter()` est appelée au début de chaque test. `screenList()` appelle `resetFilter()` à chaque rendu initial, et `refresh()` aussi. Le cache est préservé entre les appels de `filtrerParticipants` dans un même rendu, ce qui réalise la monotonie : chaque frappe restreint le set précédent.
 
+### Chemins absolus dans le manifest et index.html (étape 15)
+Les tests PWA sont lancés depuis `/test/index.html`. Si le manifest utilise des chemins relatifs (`assets/icon-192.png`), la résolution depuis `/test/index.html` donne `/test/assets/icon-192.png` → 404. Décision : tous les chemins (`manifest` `src`, `index.html` `apple-touch-icon`, `favicon`, `css`, `manifest` `href`) sont absolus (`/assets/icon-192.png`). Fonctionne depuis n'importe quelle page.
+
+### Icônes PWA redimensionnées depuis le logo client (étape 15)
+`assets/icon-192.png` et `assets/icon-512.png` sont générés par redimensionnement PIL (LANCZOS) de `assets/Logo Green Forme seule sans fond.png` (fichier fourni par le client), pas des carrés verts unis créés arbitrairement.
+
+### `main.js` minimal, pas de routeur (étape 15)
+`main.js` n'appelle que `hydrateConfig({})` et `precalcChecksums()`. Le routeur d'écrans est laissé à une étape ultérieure. Le SW est enregistré dans `<script>` inline dans `index.html` pour garantir un enregistrement précoce, avant que le module `main.js` ne soit chargé.
+
+### Nom du cache `bim-v1` (étape 15)
+Conforme SPEC §11 note : incrémenter `CACHE` à chaque déploiement. `v1` est la première version.
+
+### Tests PWA non automatisables en headless
+Les tests de registration SW et de précache (caches.open, cache.match) nécessitent un navigateur réel avec support SW. La vérification statique (HTTP 200, contenu des fichiers) est automatisée ; les tests de précache nécessitent une ouverture manuelle dans le navigateur.
+
 ### Portrait choisi sans mesure réelle (étape 11)
 Tableau d'essai créé (`test/tableau-essai.html`) mais pas imprimé. Décision : portrait. Si l'impression montre un problème → `@page landscape`.
 
@@ -179,6 +195,7 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 - `screen-list.js` : `formatTau` dupliqué (séparateur `h` au lieu de `:` comme dans screen-scan.js). Troisième copie de la même fonction (screen-scan.js `:`, screen-report.js `h`, screen-list.js `h`).
 - `backup.js` : `exporterFichier` et `importerFichier` non testables en Node (manque DOM). Les tests DOM ne passent qu'au navigateur.
 - `backup.js` : `importerFusion` suppose que store a `loadAllPointages`. Si `store.clearAll()` est ajouté plus tard, refactorer pour l'utiliser.
+- `test/pwa.test.js` : tests navigateur uniquement (SW registration, Cache API). Vérification statique automatisée, le test complet nécessite ouverture manuelle de `/test/index.html`.
 
 ---
 
@@ -206,6 +223,7 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 20. **Module-level state dans screen-list.js.** `_previousFiltered` est module-level et persiste entre les appels de `filtrerParticipants`. Chaque test doit appeler `resetFilter()` explicitement, sinon les résultats des tests suivants deviennent indéterministes.
 21. **`importerFichier()`/`exporterFichier()` dépendent du DOM.** Créent et cliquent des éléments HTML (`<a download>`, `<input type="file">`). Non testables en Node, ni dans le harnais actuel (pas de simulation de file dialog).
 22. **`loadAllPointages` non atomique au niveau applicatif.** Si le navigateur plante entre `os.clear()` et le premier `os.put()`, les données sont perdues. Acceptable en PWA avec service worker (pas de crash intempestif en salle).
+23. **Chemins relatifs dans le manifest PWA.** Le manifest.webmanifest est résolu depuis la page courante. Depuis `/test/index.html`, `assets/icon-192.png` → `/test/assets/icon-192.png` (404). Toujours utiliser des chemins absolus (`/assets/icon-192.png`).
 
 ---
 
@@ -213,8 +231,8 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 
 À déterminer par l'opérateur. Reste à faire (liste non priorisée) :
 - ⚠️ Test physique badges : imprimer `http://localhost:8000/test/badges-print.html`, découper, scanner avec l'app
-- ⚠️ Test métrologie rapport : imprimer sur imprimante réelle, mesurer les largeurs
-- `main.js` (routeur d'écrans, câblage `hydrateConfig` + `precalcChecksums`)
+- ⚠️ Test physique rapport : imprimer sur imprimante réelle, mesurer les largeurs
+- ⚠️ Test physique PWA : mode avion, installation Android/iOS
+- `main.js` (routeur d'écrans, câblage des 4 écrans)
 - `store.clearAll()` + 6 champs modifiables dans screen-setup.js
-- `sw.js` + `manifest.webmanifest` (PWA, précache)
 - Déploiement HTTPS (Netlify/GitHub Pages) + installation Android/iOS
