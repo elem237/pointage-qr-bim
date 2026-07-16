@@ -60,8 +60,8 @@ export async function screenScan(container, store) {
       <input type="radio" name="override" value="midi"> Midi
     </label>
   </div>
-  <div id="result-overlay" style="display:none;position:absolute;bottom:0;left:0;right:0;padding:16px;text-align:center;font-size:1.4em;font-weight:bold;color:#fff;"></div>
-  <button id="btn-scan" style="display:block;width:100%;padding:12px;font-size:1.1em;">Démarrer le scan</button>
+  <div id="result-overlay" style="display:none;position:absolute;bottom:52px;left:0;right:0;padding:16px;text-align:center;font-size:1.4em;font-weight:bold;color:#fff;"></div>
+  <button id="btn-scan" style="position:absolute;bottom:0;left:0;right:0;width:100%;padding:12px;font-size:1.1em;border:none;cursor:pointer;background:#006633;color:#fff;">Démarrer le scan</button>
 </div>
   `;
 

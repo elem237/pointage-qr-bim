@@ -109,4 +109,6 @@ tr.p  { height: 8.78mm; }
 }
 .nav-btn:hover { background: #008844; color: #fff; }
 .nav-btn:active, .nav-btn:focus { outline: none; }
-#screen-container { min-height: calc(100vh - 44px); }
+#screen-container { height: calc(100vh - 44px); }
+#btn-scan { z-index: 10; }
+#btn-scan:active { opacity: 0.8; }
