@@ -16,7 +16,7 @@
 | 10 | 🔴 `report.js` — etatCellule, stats | `js/model/report.js`, `test/report.test.js` | 18/18 | — | 2026-07-15 |
 | 11 | Écran Rapport + `@media print` → PDF | `js/ui/screen-report.js`, `css/app.css`, `assets/logos.js`, `test/screen-report.test.js`, `test/report-render.test.js` | 28/28 (183/183 total) | — | 2026-07-15 |
 | 12 | Écran Réglages — DATES modifiables, Mode test, EFFACER | `js/ui/screen-setup.js`, `js/config.js`, `css/app.css`, `test/screen-setup.test.js`, `test/config.test.js`, `test/index.html` | 56/56 core + 8 DOM-only | — | 2026-07-16 |
-| 13 | `badges.js` — planche A4 de 16 QR version 1-Q | `vendor/qrcode.js`, `js/badges.js`, `css/app.css`, `test/badges.test.js`, `test/badges-print.html`, `test/index.html` | 12/12 ⚠️ test physique en attente | claude-opus-4-8 | 2026-07-16 |
+| 13 | `badges.js` — planche A4 de 16 QR version 1-Q | `vendor/qrcode.js`, `js/badges.js`, `css/app.css`, `test/badges.test.js`, `test/badges-print.html`, `test/index.html` | 12/12 + scan physique BIM26-001-YJ ✅ | claude-opus-4-8 | 2026-07-16 |
 
 ---
 
@@ -137,7 +137,7 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 | iPhone/Safari · impression rapport | barre = 88 mm au lieu de 100 mm. Safari ignore `@page margin:0` → échelle 87.9 %. | ✅ ACCEPTÉ (échelle uniforme, rien ne déborde). Ne pas rouvrir. |
 | iPhone · caméra HTTPS + PWA standalone | — | ✅ FONCTIONNE |
 | iPhone · ding AudioContext | Audible mais state = 'suspended' | DETTE : `await ctx.resume()` dans `initAudio()` |
-| Badges QR · impression + scan physique | — | ⚠️ EN ATTENTE |
+| Badges QR · impression + scan physique | Badge 1 (`BIM26-001-YJ`) scanné et lu correctement. QR version 1-Q lisible sur papier. | ✅ FORMAT CONFIRMÉ — scanner les 15 autres avant le jour J |
 | Rapport PDF · impression réelle (largeurs) | — | ⚠️ EN ATTENTE avant le jour J |
 
 ---
