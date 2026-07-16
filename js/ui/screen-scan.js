@@ -46,8 +46,8 @@ export function couleurPourResultat(r) {
 
 export async function screenScan(container, store) {
   container.innerHTML = `
-<div id="screen-scan" style="position:relative;width:100%;height:100%;">
-  <video id="camera-feed" autoplay playsinline style="width:100%;height:auto;display:block;"></video>
+<div id="screen-scan" style="position:relative;width:100%;height:calc(100vh - 44px);overflow:hidden;">
+  <video id="camera-feed" autoplay playsinline style="width:100%;height:100%;display:block;object-fit:cover;"></video>
   <canvas id="roi-canvas" style="display:none;"></canvas>
   <div id="selector-bar" style="position:absolute;top:8px;left:0;right:0;text-align:center;background:rgba(0,0,0,0.5);padding:8px;">
     <label style="color:#fff;margin:0 8px;cursor:pointer;">
@@ -81,9 +81,17 @@ export async function screenScan(container, store) {
 
   btnScan.addEventListener('click', async () => {
     if (stream) { arreterScan(); return; }
-    initAudio();
+    resultOverlay.style.display = 'block';
+    resultOverlay.style.background = '#555';
+    resultOverlay.textContent = 'Démarrage de la caméra…';
+    const audioOk = initAudio();
+    if (audioOk && audioOk.state === 'suspended') {
+      try { await audioOk.resume(); } catch (_) {}
+    }
     try {
       stream = await startCamera(video);
+      btnScan.textContent = 'Arrêter';
+      resultOverlay.style.display = 'none';
       controller = lancerBoucle(video, canvas, async (roi) => {
         const override = container.querySelector('input[name="override"]:checked').value;
         const result = await Scan(roi, Date.now(), override, store, H_MAP);
@@ -94,11 +102,16 @@ export async function screenScan(container, store) {
         feedback(result);
         if (controller) controller.freeze(300);
       });
-      btnScan.textContent = 'Arrêter';
     } catch (e) {
       resultOverlay.style.display = 'block';
       resultOverlay.style.background = '#f44336';
-      resultOverlay.textContent = 'Caméra inaccessible';
+      if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+        resultOverlay.textContent = 'Caméra bloquée — autorisez-la dans Réglages > Safari, ou utilisez l\'écran Liste';
+      } else if (e.name === 'NotFoundError') {
+        resultOverlay.textContent = 'Aucune caméra trouvée';
+      } else {
+        resultOverlay.textContent = 'Caméra inaccessible';
+      }
       feedback({ resultat: 'ERREUR', code: 'inconnu' });
     }
   });

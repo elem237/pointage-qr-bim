@@ -9,7 +9,7 @@ import { getConfig } from '../config.js';
  */
 export async function startCamera(videoEl) {
   const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: 'environment' },
+    video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
   });
   videoEl.srcObject = stream;
   await videoEl.play();
