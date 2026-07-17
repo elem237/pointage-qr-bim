@@ -3,7 +3,7 @@ import { getConfig } from '../config.js';
 import { norm } from '../model/norm.js';
 import { idDe } from '../model/ident.js';
 import { tousLesSlots, slotDe, cle as slotCle } from '../model/slots.js';
-import { etatCellule } from '../model/report.js';
+import { etatCellule, slotsEchus } from '../model/report.js';
 import { serialiser, exporterFichier, importerFichier, importerFusion } from '../db/backup.js';
 
 function formatTau(tau) {
@@ -11,10 +11,6 @@ function formatTau(tau) {
   const hh = String(d.getUTCHours()).padStart(2, '0');
   const mm = String(d.getUTCMinutes()).padStart(2, '0');
   return `${hh}h${mm}`;
-}
-
-function nomNormalise(p) {
-  return norm(p.nomComplet);
 }
 
 let _previousFiltered = null;
@@ -29,7 +25,7 @@ export function filtrerParticipants(query) {
     return PARTICIPANTS;
   }
   const q = norm(query);
-  const out = source.filter(p => nomNormalise(p).includes(q));
+  const out = source.filter(p => norm(p.nomComplet).includes(q));
   _previousFiltered = out;
   return out;
 }
@@ -38,184 +34,316 @@ export function resetFilter() {
   _previousFiltered = null;
 }
 
-function statutHtml(m, participant, slot, tNow) {
-  const e = etatCellule(m, participant, slot, tNow);
-  switch (e.type) {
-    case 'present':
-      return `<span class="ls-statut ls-present">P ${formatTau(e.tau)}</span>`;
-    case 'absent':
-      return `<span class="ls-statut ls-absent">A</span>`;
-    case 'vide':
-      return `<span class="ls-statut ls-vide">&mdash;</span>`;
-  }
-}
-
 export function screenList(container, store, m, tNow = Date.now()) {
-  const cfg = getConfig();
+  const echus = slotsEchus(tNow);
   const slots = tousLesSlots();
   let localM = m;
 
   resetFilter();
 
-  function renderRows(query) {
-    const tbody = container.querySelector('#list-tbody');
-    if (!tbody) return;
-    const list = filtrerParticipants(query);
-    tbody.innerHTML = list.map(p => {
-      const statuses = slots.map(s => {
-        const e = etatCellule(localM, p, s, tNow);
-        let cls, txt;
-        if (e.type === 'present') {
-          cls = 'ls-present';
-          txt = `P ${formatTau(e.tau)}`;
-        } else if (e.type === 'absent') {
-          cls = 'ls-absent';
-          txt = 'A';
-        } else {
-          cls = 'ls-vide';
-          txt = '\u2014';
-        }
-        const canCancel = e.type === 'present';
-        return `<td class="ls-cell ${cls}" data-numero="${p.numero}" data-slot-idx="${slots.indexOf(s)}">${txt}${canCancel ? '<button class="ls-cancel-btn" data-action="cancel" title="Annuler">&times;</button>' : ''}</td>`;
-      }).join('');
-      return `<tr data-numero="${p.numero}">
-        <td class="ls-nom">${p.numero}. ${p.nomComplet}</td>
-        ${statuses}
-        <td class="ls-action"><button class="ls-pointer-btn" data-action="pointer">Pointer</button></td>
-      </tr>`;
+  function absentsCount() {
+    const e = slotsEchus(tNow);
+    return PARTICIPANTS.filter(p => e.some(s => etatCellule(localM, p, s, tNow).type === 'absent')).length;
+  }
+
+  function pastilleHtml(participant, slot) {
+    const k = slotCle(idDe(participant.numero), slot);
+    const v = localM.get(k);
+    if (v && v.statut === 'actif') {
+      const modeCls = v.mode === 'manuel' ? 'ls-pastille--manuel' : 'ls-pastille--present';
+      return `<div class="ls-pastille ${modeCls}" data-cle="${k}" data-present="1">${formatTau(v.tau)}</div>`;
+    }
+    const isEchu = echus.some(e => e.date === slot.date && e.creneau === slot.creneau);
+    if (isEchu) {
+      return `<div class="ls-pastille ls-pastille--absent" data-cle="${k}">A</div>`;
+    }
+    return `<div class="ls-pastille ls-pastille--vide" data-cle="${k}">\u2014</div>`;
+  }
+
+  function renderRows(query, filterMode) {
+    const listEl = container.querySelector('#ls-rows');
+    if (!listEl) return;
+    let list = filtrerParticipants(query);
+    if (filterMode === 'absents') {
+      const e = slotsEchus(tNow);
+      list = list.filter(p => e.some(s => etatCellule(localM, p, s, tNow).type === 'absent'));
+    }
+    listEl.innerHTML = list.map(p => {
+      const pastilles = slots.map(s => pastilleHtml(p, s)).join('');
+      return `<div class="ls-row" data-numero="${p.numero}">
+        <span class="ls-num">${String(p.numero).padStart(2, '0')}</span>
+        <span class="ls-name">${p.nomComplet}</span>
+        <button class="ls-menu-btn" data-action="menu" data-numero="${p.numero}" aria-label="Actions">\u22ef</button>
+        <div class="ls-pastilles">${pastilles}</div>
+      </div>`;
     }).join('');
+  }
+
+  function renderFilterPills() {
+    const allBtn = container.querySelector('#ls-filter-all');
+    const absBtn = container.querySelector('#ls-filter-abs');
+    if (allBtn) allBtn.innerHTML = `Tous \u00b7 16`;
+    if (absBtn) absBtn.innerHTML = `Absents \u00b7 ${absentsCount()}`;
+  }
+
+  function updateMenuPopup(numero) {
+    const existing = container.querySelector('.ls-menu-popup');
+    if (existing) existing.remove();
+
+    const participant = PARTICIPANTS.find(p => p.numero === numero);
+    if (!participant) return;
+
+    const btn = container.querySelector(`.ls-menu-btn[data-numero="${numero}"]`);
+    if (!btn) return;
+
+    const popup = document.createElement('div');
+    popup.className = 'ls-menu-popup';
+    popup.innerHTML =
+      '<button class="ls-menu-item" data-action="pointer" data-numero="' + numero + '">Pointer manuellement</button>' +
+      '<button class="ls-menu-item" data-action="cancel-open" data-numero="' + numero + '">Annuler</button>';
+    btn.parentNode.appendChild(popup);
+
+    const closePopup = (e) => {
+      if (!popup.contains(e.target) && e.target !== btn) {
+        popup.remove();
+        document.removeEventListener('click', closePopup);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closePopup), 0);
+  }
+
+  function cancelSubmenu(numero) {
+    const existing = container.querySelector('.ls-menu-popup');
+    if (existing) existing.remove();
+
+    const participant = PARTICIPANTS.find(p => p.numero === numero);
+    if (!participant) return;
+
+    const slots = tousLesSlots();
+    const presentSlots = slots.filter(s => {
+      const k = slotCle(idDe(numero), s);
+      const v = localM.get(k);
+      return v && v.statut === 'actif';
+    });
+
+    if (presentSlots.length === 0) {
+      const popup = document.createElement('div');
+      popup.className = 'ls-menu-popup';
+      popup.innerHTML = '<div class="ls-menu-item ls-menu-item--disabled">Aucun pointage \u00e0 annuler</div>';
+      const btn = container.querySelector(`.ls-menu-btn[data-numero="${numero}"]`);
+      if (btn && btn.parentNode) btn.parentNode.appendChild(popup);
+      const closePopup = (e) => {
+        if (!popup.contains(e.target) && e.target !== btn) {
+          popup.remove();
+          document.removeEventListener('click', closePopup);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', closePopup), 0);
+      return;
+    }
+
+    const popup = document.createElement('div');
+    popup.className = 'ls-menu-popup ls-menu-popup--wide';
+    popup.innerHTML = presentSlots.map(s => {
+      const k = slotCle(idDe(numero), s);
+      const v = localM.get(k);
+      return '<button class="ls-menu-item" data-action="do-cancel" data-cle="' + k + '" data-numero="' + numero + '" data-slot-date="' + s.date + '" data-slot-creneau="' + s.creneau + '">Annuler ' + s.date + ' ' + (s.creneau === 'matin' ? 'Matin' : 'Midi') + ' (' + formatTau(v.tau) + ')</button>';
+    }).join('');
+    const btn = container.querySelector(`.ls-menu-btn[data-numero="${numero}"]`);
+    if (btn && btn.parentNode) btn.parentNode.appendChild(popup);
+    const closePopup = (e) => {
+      if (!popup.contains(e.target) && e.target !== btn) {
+        popup.remove();
+        document.removeEventListener('click', closePopup);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closePopup), 0);
+  }
+
+  function pointerSubmenu(numero) {
+    const existing = container.querySelector('.ls-menu-popup');
+    if (existing) existing.remove();
+
+    const popup = document.createElement('div');
+    popup.className = 'ls-menu-popup ls-menu-popup--wide';
+    popup.innerHTML =
+      '<div class="ls-menu-item ls-menu-section">Override :</div>' +
+      '<label class="ls-menu-item ls-menu-radio"><input type="radio" name="ls-popup-ov" value="auto" checked> Auto</label>' +
+      '<label class="ls-menu-item ls-menu-radio"><input type="radio" name="ls-popup-ov" value="matin"> Matin</label>' +
+      '<label class="ls-menu-item ls-menu-radio"><input type="radio" name="ls-popup-ov" value="midi"> Midi</label>' +
+      '<button class="ls-menu-item ls-menu-action" data-action="do-pointer" data-numero="' + numero + '">Pointer</button>';
+    const btn = container.querySelector(`.ls-menu-btn[data-numero="${numero}"]`);
+    if (btn && btn.parentNode) btn.parentNode.appendChild(popup);
+    const closePopup = (e) => {
+      if (!popup.contains(e.target) && e.target !== btn) {
+        popup.remove();
+        document.removeEventListener('click', closePopup);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closePopup), 0);
   }
 
   function render() {
     const slots = tousLesSlots();
-    const headerCells = slots.map(s => `<th>J${s.jour} ${s.label}</th>`).join('');
+    container.innerHTML =
+      '<div id="screen-list">' +
+        '<div class="ls-search-wrap">' +
+          '<svg class="ls-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+          '<input id="ls-search" type="text" placeholder="Rechercher un nom\u2026" autocomplete="off">' +
+        '</div>' +
+        '<div class="ls-filters">' +
+          '<button class="ls-filter ls-filter--active" id="ls-filter-all" data-filter="all">Tous \u00b7 16</button>' +
+          '<button class="ls-filter" id="ls-filter-abs" data-filter="absents">Absents \u00b7 ' + absentsCount() + '</button>' +
+          '<div class="ls-filter-spacer"></div>' +
+          '<button id="ls-export" class="ls-icon-btn" title="Exporter">' +
+            '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+          '</button>' +
+          '<button id="ls-import" class="ls-icon-btn" title="Importer">' +
+            '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' +
+          '</button>' +
+        '</div>' +
+        '<div id="ls-rows"></div>' +
+        '<div class="ls-legend">' +
+          '<span><span class="ls-dot" style="background:var(--p-bg)"></span> pr\u00e9sent</span> \u00b7 ' +
+          '<span><span class="ls-dot" style="background:var(--m-bg)"></span> manuel</span> \u00b7 ' +
+          '<span><span class="ls-dot" style="background:var(--a-bg)"></span> absent</span> \u00b7 ' +
+          '<span><span class="ls-dot" style="background:var(--v-bg)"></span> non tenu</span>' +
+        '</div>' +
+      '</div>';
 
-    container.innerHTML = `
-<div id="screen-list">
-  <h2>Liste des participants</h2>
-  <div class="ls-bar">
-    <input type="text" id="ls-search" placeholder="Rechercher un participant..." autocomplete="off">
-    <span class="ls-override">
-      <label><input type="radio" name="ls-ov" value="auto" checked> Auto</label>
-      <label><input type="radio" name="ls-ov" value="matin"> Matin</label>
-      <label><input type="radio" name="ls-ov" value="midi"> Midi</label>
-    </span>
-    <button id="ls-export">Exporter</button>
-    <button id="ls-import">Importer</button>
-  </div>
-  <div id="ls-status-bar"></div>
-  <table id="list-table">
-    <thead><tr><th>Participant</th>${headerCells}<th>Action</th></tr></thead>
-    <tbody id="list-tbody"></tbody>
-  </table>
-</div>`;
-
-    renderRows('');
+    renderRows('', 'all');
+    renderFilterPills();
   }
 
   render();
 
-  const searchInput = container.querySelector('#ls-search');
-  const statusBar = container.querySelector('#ls-status-bar');
+  let _currentFilter = 'all';
 
-  searchInput.addEventListener('input', () => {
-    renderRows(searchInput.value);
-  });
+  container.addEventListener('click', (e) => {
+    const filterBtn = e.target.closest('.ls-filter');
+    if (filterBtn) {
+      container.querySelectorAll('.ls-filter').forEach(b => b.classList.remove('ls-filter--active'));
+      filterBtn.classList.add('ls-filter--active');
+      _currentFilter = filterBtn.dataset.filter;
+      const search = container.querySelector('#ls-search');
+      renderRows(search ? search.value : '', _currentFilter);
+      renderFilterPills();
+      return;
+    }
 
-  container.addEventListener('click', async (e) => {
-    const btn = e.target.closest('button[data-action]');
-    if (!btn) return;
+    const menuBtn = e.target.closest('.ls-menu-btn');
+    if (menuBtn) {
+      const num = parseInt(menuBtn.dataset.numero, 10);
+      updateMenuPopup(num);
+      return;
+    }
 
-    const tr = btn.closest('tr');
-    if (!tr) return;
-    const numero = parseInt(tr.dataset.numero, 10);
-    const participant = PARTICIPANTS.find(p => p.numero === numero);
-    if (!participant) return;
+    const menuItem = e.target.closest('.ls-menu-item');
+    if (!menuItem) return;
 
-    const action = btn.dataset.action;
+    const action = menuItem.dataset.action;
 
     if (action === 'pointer') {
-      const override = container.querySelector('input[name="ls-ov"]:checked').value;
+      const num = parseInt(menuItem.dataset.numero, 10);
+      const popup = menuItem.closest('.ls-menu-popup');
+      if (popup) popup.remove();
+      pointerSubmenu(num);
+      return;
+    }
+
+    if (action === 'cancel-open') {
+      const num = parseInt(menuItem.dataset.numero, 10);
+      const popup = menuItem.closest('.ls-menu-popup');
+      if (popup) popup.remove();
+      cancelSubmenu(num);
+      return;
+    }
+
+    if (action === 'do-pointer') {
+      const num = parseInt(menuItem.dataset.numero, 10);
+      const popup = menuItem.closest('.ls-menu-popup');
+      const override = popup ? popup.querySelector('input[name="ls-popup-ov"]:checked')?.value || 'auto' : 'auto';
+      if (popup) popup.remove();
+
+      const participant = PARTICIPANTS.find(p => p.numero === num);
+      if (!participant) return;
+
       let slot;
       if (override === 'auto') {
         slot = slotDe(tNow);
       } else {
         const cfg = getConfig();
         const d = new Date(tNow + 3600000);
-        const date = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
-        if (!cfg.DATES.includes(date)) {
-          statusBar.textContent = 'HORS_SESSION : date hors formation';
-          return;
-        }
+        const date = d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+        if (!cfg.DATES.includes(date)) return;
         slot = { date, creneau: override };
       }
-      if (!slot) {
-        statusBar.textContent = 'HORS_SESSION';
-        return;
-      }
-      const k = slotCle(idDe(numero), slot);
-      const result = await store.reg(k, tNow, 'manuel', override);
-      if (result.resultat === 'OK') {
-        localM = store.getPointages();
-        statusBar.textContent = `✓ ${participant.nomComplet} pointé`;
-        renderRows(searchInput.value);
-      } else if (result.resultat === 'DEJA_POINTE') {
-        statusBar.textContent = `${participant.nomComplet} déjà pointé à ${formatTau(result.tau)}`;
-      } else {
-        statusBar.textContent = 'Erreur lors du pointage';
-      }
+      if (!slot) return;
+
+      const k = slotCle(idDe(num), slot);
+      store.reg(k, tNow, 'manuel', override).then(result => {
+        if (result.resultat === 'OK') {
+          localM = store.getPointages();
+        }
+        const search = container.querySelector('#ls-search');
+        renderRows(search ? search.value : '', _currentFilter);
+        renderFilterPills();
+      });
+      return;
     }
 
-    if (action === 'cancel') {
-      const td = btn.closest('td');
-      const slotIdx = parseInt(td.dataset.slotIdx, 10);
-      if (isNaN(slotIdx)) return;
-      const slot = tousLesSlots()[slotIdx];
-      if (!slot) return;
-      const k = slotCle(idDe(numero), slot);
+    if (action === 'do-cancel') {
+      const cle = menuItem.dataset.cle;
+      const num = parseInt(menuItem.dataset.numero, 10);
+      const participant = PARTICIPANTS.find(p => p.numero === num);
+      const popup = menuItem.closest('.ls-menu-popup');
+      if (popup) popup.remove();
+
       const cfg = getConfig();
       let canProceed = true;
       if (cfg.MULTI_APPAREILS) {
         canProceed = confirm('Avez-vous fusionné les appareils depuis le dernier export ? [OK = Oui, annuler, Annuler = Non]');
       }
-      if (!canProceed) {
-        statusBar.textContent = 'Annulation annulée — fusionnez d\'abord';
-        return;
-      }
-      if (!confirm(`Annuler le pointage de ${participant.nomComplet} pour ${slot.date} ${slot.creneau} ?`)) {
-        return;
-      }
-      const result = await store.cancel(k);
-      if (result.resultat === 'OK') {
-        localM = store.getPointages();
-        statusBar.textContent = `✗ ${participant.nomComplet} annulé pour ${slot.date} ${slot.creneau}`;
-        renderRows(searchInput.value);
-      } else {
-        statusBar.textContent = 'Erreur : pointage introuvable';
-      }
+      if (!canProceed) return;
+
+      if (!confirm('Annuler le pointage de ' + participant.nomComplet + ' pour ' + menuItem.dataset.slotDate + ' ' + menuItem.dataset.slotCreneau + ' ?')) return;
+
+      store.cancel(cle).then(result => {
+        if (result.resultat === 'OK') {
+          localM = store.getPointages();
+        }
+        const search = container.querySelector('#ls-search');
+        renderRows(search ? search.value : '', _currentFilter);
+        renderFilterPills();
+      });
+      return;
     }
   });
 
+  const searchInput = container.querySelector('#ls-search');
+  searchInput.addEventListener('input', () => {
+    renderRows(searchInput.value, _currentFilter);
+    renderFilterPills();
+  });
+
   container.addEventListener('click', async (e) => {
-    if (e.target.id === 'ls-export') {
+    if (e.target.id === 'ls-export' || e.target.closest('#ls-export')) {
       const json = serialiser(PARTICIPANTS, localM);
       exporterFichier(json);
-      statusBar.textContent = 'Fichier exporté';
+      return;
     }
-    if (e.target.id === 'ls-import') {
+    if (e.target.id === 'ls-import' || e.target.closest('#ls-import')) {
       try {
         const json = await importerFichier();
         const result = await importerFusion(store, json);
         if (result.resultat === 'OK') {
           localM = store.getPointages();
-          statusBar.textContent = `${result.nb} pointages importés et fusionnés`;
-          renderRows(searchInput.value);
-        } else {
-          statusBar.textContent = 'Import échoué : format de fichier invalide (version ?)';
+          const search = container.querySelector('#ls-search');
+          renderRows(search ? search.value : '', _currentFilter);
+          renderFilterPills();
         }
-      } catch (err) {
-        statusBar.textContent = 'Import annulé ou erreur de lecture';
-      }
+      } catch (_) {}
+      return;
     }
   });
 
@@ -224,7 +352,9 @@ export function screenList(container, store, m, tNow = Date.now()) {
       localM = newM || store.getPointages();
       tNow = newTNow || Date.now();
       _previousFiltered = null;
-      renderRows(searchInput ? searchInput.value : '');
+      const search = container.querySelector('#ls-search');
+      renderRows(search ? search.value : '', _currentFilter);
+      renderFilterPills();
     },
   };
 }
