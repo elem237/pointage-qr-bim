@@ -167,7 +167,7 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 | iPhone/Safari · impression rapport | barre = 88 mm au lieu de 100 mm. Safari ignore `@page margin:0` → échelle 87.9 %. | ✅ ACCEPTÉ (échelle uniforme, rien ne déborde). Ne pas rouvrir. |
 | iPhone · caméra HTTPS + PWA standalone | — | ✅ FONCTIONNE |
 | iPhone · ding AudioContext | Audible mais state = 'suspended' | DETTE : `await ctx.resume()` dans `initAudio()` |
-| Badges QR · impression + scan physique | Badge 1 (`BIM26-001-YJ`) scanné et lu correctement. QR version 1-Q lisible sur papier. | ✅ FORMAT CONFIRMÉ — scanner les 15 autres avant le jour J |
+| Badges QR · impression + scan physique | Les 16 badges scannés et lus correctement. QR version 1-Q lisible sur papier, ~30 cm, éclairage néons. | ✅ FORMAT CONFIRMÉ — tous les badges validés |
 | Rapport PDF · impression réelle (largeurs) | — | ⚠️ EN ATTENTE avant le jour J |
 
 ---
@@ -231,7 +231,7 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 ## Prochaine étape
 
 À déterminer par l'opérateur. Reste à faire (liste non priorisée) :
-- ⚠️ Test physique badges : imprimer `http://localhost:8000/test/badges-print.html`, découper, scanner avec l'app
+- ✅ Test physique badges : tous les 16 QR scannés et lus correctement
 - ⚠️ Test physique rapport : imprimer sur imprimante réelle, mesurer les largeurs
 - ⚠️ Test physique PWA : mode avion, installation Android/iOS
 - ✅ `main.js` — routeur 4 écrans (Scan, Rapport, Liste, Réglages) + barre de navigation
