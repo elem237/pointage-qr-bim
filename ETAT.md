@@ -143,7 +143,7 @@ Les tests PWA sont lancés depuis `/test/index.html`. Si le manifest utilise des
 `main.js` n'appelle que `hydrateConfig({})` et `precalcChecksums()`. Le routeur d'écrans est laissé à une étape ultérieure. Le SW est enregistré dans `<script>` inline dans `index.html` pour garantir un enregistrement précoce, avant que le module `main.js` ne soit chargé.
 
 ### Nom du cache `bim-v1` (étape 15)
-Conforme SPEC §11 note : incrémenter `CACHE` à chaque déploiement. `v1` est la première version.
+Conforme SPEC §11 note : incrémenter `CACHE` à chaque déploiement. `v1` est la première version. Actuellement `bim-v7` (post-audit 2026-07-17).
 
 ### Tests PWA non automatisables en headless
 Les tests de registration SW et de précache (caches.open, cache.match) nécessitent un navigateur réel avec support SW. La vérification statique (HTTP 200, contenu des fichiers) est automatisée ; les tests de précache nécessitent une ouverture manuelle dans le navigateur.
@@ -209,7 +209,7 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 - `screen-setup.js` : 6 champs modifiables manquants.
 - `store.clearAll()` n'existe pas.
 - Tests DOM de `screen-setup.test.js` (8 tests P1-P8) uniquement navigateur.
-- `feedback.js` : dette AudioContext — `await ctx.resume()` + un seul contexte réutilisé (piège iOS).
+- ~~`feedback.js` : dette AudioContext — `await ctx.resume()` + un seul contexte réutilisé (piège iOS).~~ ✅ Corrigé le 2026-07-17.
 - `badges.js` : `test/badges-print.html` est une page de prévisualisation hors spec, à supprimer ou intégrer dans `main.js` quand le routeur existera.
 - `screen-list.js` : pas de styles CSS dédiés (utilise les styles navigateur par défaut pour le tableau). CSS à ajouter si l'UI doit être présentable.
 - `screen-list.js` : la confirmation d'annulation utilise `confirm()` natif (modal bloquant). Une modale personnalisée serait plus jolie mais ajoute du code DOM.
@@ -245,6 +245,25 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 21. **`importerFichier()`/`exporterFichier()` dépendent du DOM.** Créent et cliquent des éléments HTML (`<a download>`, `<input type="file">`). Non testables en Node, ni dans le harnais actuel (pas de simulation de file dialog).
 22. **`loadAllPointages` non atomique au niveau applicatif.** Si le navigateur plante entre `os.clear()` et le premier `os.put()`, les données sont perdues. Acceptable en PWA avec service worker (pas de crash intempestif en salle).
 23. **~~Chemins absolus dans le manifest PWA~~ — corrigé le 2026-07-17, ne pas revenir en arrière.** Un navigateur résout les URLs du manifest (`start_url`, `icons[].src`) par rapport au **manifest lui-même**, pas par rapport à la page qui l'a chargé. Les chemins relatifs (`./assets/icon-192.png`) sont donc corrects et portables (marchent à n'importe quel sous-chemin de déploiement), contrairement aux chemins absolus (`/assets/...`) qui cassent tout déploiement hors racine. Le piège n'est pas dans le manifest : c'est `test/pwa.test.js` qui faisait `fetch(icon.src)` en le résolvant par rapport à la page de test (`/test/`) au lieu du manifest — corrigé via `new URL(icon.src, resp.url)`. Voir correctif hors-ligne du 2026-07-17.
+
+---
+
+## Post-audit — 2026-07-17
+
+**3 corrections appliquées :**
+
+1. `feedback.js:initAudio()` — `async`, `await _ctx.resume()` après création/réutilisation, retourne `_ctx.state === 'running'` (booléen). iOS ding fonctionnel. Appelant `screen-scan.js:234` mis à jour en `const audioOk = await initAudio();` ; l'ancienne double garde `.state === 'suspended'/resume manuel remplacée.
+
+2. `backup.js:deserialiser()` — 3 gardes ajoutées (`typeof v.mode !== 'string'`, `typeof v.device !== 'string'`, `typeof v.override !== 'string'` → `return null`). G11 (champs absents) passe, G11bis (mauvais types : `0`, `true`, `null`, `[]`) ajouté et passe.
+
+3. `sw.js` — bloc `Promise.allSettled`/`fetch`/`cache.put` remplacé par `cache.addAll(ASSETS)` atomique. CACHE : `bim-v6` → `bim-v7`.
+
+**Suppression :** `rapport-avant.pdf` (PDF du .docx source, pas de l'app — a faussé l'audit).
+
+**Nouvelles dettes assumées :**
+- `DEFAULTS.DATES` utilisé directement dans `screen-setup.js` — usage légitime (valeur de repli avant override).
+- `LABEL_CRENEAU` non exporté depuis `data.js` — nécessaire mais pas bloquant.
+- `test/pwa.test.js:112` référence encore `bim-v1` — obsolète depuis `bim-v7`.
 
 ---
 

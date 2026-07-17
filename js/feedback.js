@@ -1,11 +1,11 @@
 let _ctx = null;
 
-export function initAudio() {
-  if (_ctx) return _ctx;
+export async function initAudio() {
   const AC = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
-  if (!AC) return null;
-  _ctx = new AC();
-  return _ctx;
+  if (!AC) return false;
+  if (!_ctx) _ctx = new AC();
+  if (_ctx.state === 'suspended') await _ctx.resume();
+  return _ctx.state === 'running';
 }
 
 function jouerTone(freq, dureeSec, delaySec) {

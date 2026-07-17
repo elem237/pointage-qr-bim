@@ -8,9 +8,9 @@ test('C7 §8 — feedback exporte les 4 fonctions', () => {
   assert(typeof feedback === 'function', 'feedback');
 });
 
-test('C7 §8 — initAudio ne lance pas, retourne null ou AudioContext', () => {
+test('C7 §8 — initAudio ne lance pas, retourne false ou true', async () => {
   let ctx;
-  try { ctx = initAudio(); }
+  try { ctx = await initAudio(); }
   catch (e) { assert(false, 'initAudio a lancé: ' + e.message); }
 });
 

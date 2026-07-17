@@ -118,3 +118,20 @@ test('G11 — deserialiser rejette PointageValue sans mode/device/override', () 
   const r = deserialiser(incomplet);
   assertEq(r, null, 'doit rejeter un PointageValue sans mode/device/override');
 });
+
+/* ── G11bis — deserialiser rejette les pointages avec mode/device/override de mauvais type ── */
+test('G11bis — deserialiser rejette mode/device/override non-string', () => {
+  for (const champ of ['mode', 'device', 'override']) {
+    for (const val of [0, true, null, []]) {
+      const entry = { generation: 0, statut: 'actif', tau: 1000 };
+      entry[champ] = val;
+      const json = JSON.stringify({
+        version: 2,
+        participants: [{ numero: 1, nomComplet: "Test" }],
+        pointages: [["BIM26-001|2026-08-04|matin", entry]],
+        exportLe: Date.now()
+      });
+      assertEq(deserialiser(json), null, `doit rejeter ${champ}=${JSON.stringify(val)}`);
+    }
+  }
+});

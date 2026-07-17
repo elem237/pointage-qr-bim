@@ -35,6 +35,9 @@ export function deserialiser(json) {
       if (typeof v.generation !== 'number') return null;
       if (v.statut !== 'actif' && v.statut !== 'annule') return null;
       if (typeof v.tau !== 'number') return null;
+      if (typeof v.mode !== 'string') return null;
+      if (typeof v.device !== 'string') return null;
+      if (typeof v.override !== 'string') return null;
     }
     return {
       participants: o.participants,

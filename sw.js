@@ -1,4 +1,4 @@
-const CACHE = 'bim-v6';
+const CACHE = 'bim-v7';
 
 const ASSETS = [
   './index.html',
@@ -32,30 +32,9 @@ const ASSETS = [
   './assets/icon-512.png',
 ];
 
-async function remplirCache(cache, urls) {
-  const result = { total: urls.length, reussi: 0, echecs: [] };
-  await Promise.allSettled(urls.map(url =>
-    fetch(url).then(r => {
-      if (!r.ok) throw new Error(`${url} → ${r.status}`);
-      return cache.put(url, r);
-    }).catch(err => { result.echecs.push(err.message); })
-  ));
-  result.reussi = urls.length - result.echecs.length;
-  return result;
-}
-
 self.addEventListener('install', event => {
   self.skipWaiting();
-  event.waitUntil(
-    (async () => {
-      const cache = await caches.open(CACHE);
-      const resultat = await remplirCache(cache, ASSETS);
-      const clients = await self.clients.matchAll({ type: 'window' });
-      for (const c of clients) {
-        c.postMessage({ type: 'SW_CACHE', ...resultat });
-      }
-    })()
-  );
+  event.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
 });
 
 self.addEventListener('activate', event => {

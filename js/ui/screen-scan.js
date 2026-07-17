@@ -231,10 +231,7 @@ export async function screenScan(container, store) {
     inner.textContent = 'Démarrage de la caméra…';
     panel.style.background = '#555';
 
-    const audioOk = initAudio();
-    if (audioOk && audioOk.state === 'suspended') {
-      try { await audioOk.resume(); } catch (_) {}
-    }
+    const audioOk = await initAudio();
 
     try {
       stream = await startCamera(video);
