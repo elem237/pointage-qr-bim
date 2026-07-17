@@ -1,34 +1,35 @@
-const CACHE = 'bim-v3';
+const CACHE = 'bim-v5';
 
 const ASSETS = [
-  '/index.html',
-  '/manifest.webmanifest',
-  '/css/app.css',
-  '/js/config.js',
-  '/js/data.js',
-  '/js/main.js',
-  '/js/badges.js',
-  '/js/feedback.js',
-  '/js/db/store.js',
-  '/js/db/backup.js',
-  '/js/model/norm.js',
-  '/js/model/ident.js',
-  '/js/model/lattice.js',
-  '/js/model/slots.js',
-  '/js/model/report.js',
-  '/js/scan/camera.js',
-  '/js/scan/decode.js',
-  '/js/scan/debounce.js',
-  '/js/scan/pipeline.js',
-  '/js/ui/screen-scan.js',
-  '/js/ui/screen-list.js',
-  '/js/ui/screen-report.js',
-  '/js/ui/screen-setup.js',
-  '/vendor/jsqr.js',
-  '/vendor/qrcode.js',
-  '/assets/logos.js',
-  '/assets/icon-192.png',
-  '/assets/icon-512.png',
+  './index.html',
+  './manifest.webmanifest',
+  './css/app.css',
+  './css/print.css',
+  './js/config.js',
+  './js/data.js',
+  './js/main.js',
+  './js/badges.js',
+  './js/feedback.js',
+  './js/db/store.js',
+  './js/db/backup.js',
+  './js/model/norm.js',
+  './js/model/ident.js',
+  './js/model/lattice.js',
+  './js/model/slots.js',
+  './js/model/report.js',
+  './js/scan/camera.js',
+  './js/scan/decode.js',
+  './js/scan/debounce.js',
+  './js/scan/pipeline.js',
+  './js/ui/screen-scan.js',
+  './js/ui/screen-list.js',
+  './js/ui/screen-report.js',
+  './js/ui/screen-setup.js',
+  './vendor/jsqr.js',
+  './vendor/qrcode.js',
+  './assets/logos.js',
+  './assets/icon-192.png',
+  './assets/icon-512.png',
 ];
 
 async function remplirCache(cache, urls) {
@@ -67,29 +68,10 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   event.respondWith(
-    (async () => {
-      if (event.request.mode === 'navigate') {
-        try {
-          const res = await fetch(event.request);
-          const cache = await caches.open(CACHE);
-          cache.put('/index.html', res.clone());
-          return res;
-        } catch (_) {
-          const index = await caches.match('/index.html');
-          if (index) return index;
-        }
-        return new Response('Hors ligne', { status: 503 });
-      }
-      const cached = await caches.match(event.request);
-      if (cached) return cached;
-      try {
-        const res = await fetch(event.request);
-        const cache = await caches.open(CACHE);
-        cache.put(event.request, res.clone());
-        return res;
-      } catch (_) {
-        return new Response('Hors ligne', { status: 503 });
-      }
-    })()
+    caches.match(event.request, { ignoreSearch: true }).then(r => {
+      if (r) return r;
+      if (event.request.mode === 'navigate') return caches.match('./index.html');
+      return fetch(event.request);
+    })
   );
 });
