@@ -1,7 +1,72 @@
-/* ── Écran Rapport (SKILL.md) — reproduction exacte du document source ── */
+/* INTERFACE.md §3.1 — mode clair forcé */
+:root { color-scheme: light; }
 
-@page { size: A4 portrait; margin: 0; }
+/* INTERFACE.md §3.2 — Jetons */
+:root {
+  --vert-950:#0f3d24; --vert-900:#14532d; --vert-700:#1d7a45;
+  --vert-500:#16a34a; --vert-400:#4ade80; --vert-300:#a7d4bb; --vert-100:#dcfce7;
 
+  --p-bg:#e1f5ee; --p-fg:#0f6e56;
+  --m-bg:#faeeda; --m-fg:#854f0b;
+  --a-bg:#fcebeb; --a-fg:#a32d2d;
+  --v-bg:#f4f4f2; --v-fg:#9a9a95;
+  --danger:#a32d2d; --danger-100:#f2cfcf; --danger-border:#f0c0c0;
+
+  --txt:#1a1a18; --txt-2:#6b6b66; --txt-3:#9a9a95;
+  --bord:#ececea; --bord-2:#d8d8d4;
+  --surf:#ffffff; --surf-1:#f4f4f2;
+
+  --r:8px; --r-card:12px;
+  --font:-apple-system,"Segoe UI",system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,monospace;
+}
+
+@media screen {
+
+/* ── INTERFACE.md §4 — Navigation ── */
+#app-root { font-family: var(--font); }
+
+#nav-bar {
+  display: flex;
+  background: var(--vert-900);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 44px;
+  padding: 4px 4px 5px;
+  border: none;
+  background: transparent;
+  color: var(--vert-300);
+  font-family: var(--font);
+  font-size: 11px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-btn.active {
+  background: var(--vert-700);
+  color: #fff;
+}
+
+.nav-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+#screen-container { height: calc(100vh - 44px); }
+
+/* ── SKILL.md — aperçu écran du rapport (INTERFACE.md §6.1) ── */
 .page { position: relative; width: 210mm; height: 297mm; }
 
 .band { position: absolute; left: 0; width: 210mm; display: block; }
@@ -36,16 +101,7 @@ tr.p  { height: 8.78mm; }
 .cell-jour .pa    { font-size: 8pt; display: block; }
 .cell-jour .heure { font-size: 7pt; display: block; }
 
-@media print {
-  body { margin: 0; }
-  table.presence { break-inside: avoid; }
-  tr { break-inside: avoid; }
-  .badge-page { break-after: page; }
-  .badge-page:last-child { break-after: avoid; }
-  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-}
-
-/* ── Badges QR ── */
+/* ── Badges QR (aperçu écran) ── */
 .badge-page {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -86,29 +142,22 @@ tr.p  { height: 8.78mm; }
   letter-spacing: 0.05em;
 }
 
-/* ── Écran Réglages ── */
-#screen-setup { max-width: 600px; margin: 1em auto; padding: 1em; font-family: sans-serif; }
+/* ── INTERFACE.md §8 — Écran Réglages ── */
+#screen-setup { max-width: 600px; margin: 1em auto; padding: 1em; }
 #screen-setup h2 { margin-top: 0; }
-#screen-setup section { margin: 1em 0; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; }
+#screen-setup section { margin: 1em 0; padding: 0.5em; border: 1px solid var(--bord); border-radius: var(--r); }
 #screen-setup .setup-dates { display: flex; gap: 0.5em; flex-wrap: wrap; }
 #screen-setup .setup-dates label { display: flex; flex-direction: column; font-size: 0.85em; }
 #screen-setup .setup-dates input { margin-top: 0.2em; }
 .setup-banner.warning {
-  background: #c00; color: #fff; font-weight: bold; text-align: center;
+  background: var(--danger); color: #fff; font-weight: bold; text-align: center;
   padding: 0.5em; font-size: 1.1em;
 }
-#screen-setup .danger { background: #c00; color: #fff; border: none; padding: 0.5em 1em; font-weight: bold; cursor: pointer; }
-#screen-setup .danger:disabled { background: #ccc; cursor: not-allowed; }
+#screen-setup .danger { background: var(--danger); color: #fff; border: none; padding: 0.5em 1em; font-weight: bold; cursor: pointer; }
+#screen-setup .danger:disabled { background: var(--bord-2); cursor: not-allowed; }
 
-/* ── Navigation ── */
-#app-root { font-family: sans-serif; }
-#nav-bar { display: flex; background: #006633; position: sticky; top: 0; z-index: 100; height: 44px; }
-.nav-btn {
-  flex: 1; padding: 10px 4px; border: none; background: transparent;
-  color: #ccc; font-size: 13px; cursor: pointer; transition: background 0.15s, color 0.15s;
-}
-.nav-btn:hover { background: #008844; color: #fff; }
-.nav-btn:active, .nav-btn:focus { outline: none; }
-#screen-container { height: calc(100vh - 44px); }
+/* ── Bouton scan (démarrer/arrêter) ── */
 #btn-scan { z-index: 10; }
 #btn-scan:active { opacity: 0.8; }
+
+} /* fin @media screen */

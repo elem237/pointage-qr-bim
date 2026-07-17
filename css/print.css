@@ -1,0 +1,86 @@
+/* SKILL.md — reproduction exacte, NE PAS MODIFIER */
+@page { size: A4 portrait; margin: 0; }
+
+.page { position: relative; width: 210mm; height: 297mm; }
+
+.band { position: absolute; left: 0; width: 210mm; display: block; }
+.band:first-child { top: 0; height: 54mm; }
+.band.footer { top: 262mm; height: 35mm; }
+
+table.presence {
+  position: absolute;
+  top: 56.13mm;
+  left: 9.91mm;
+  width: 160.02mm;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-family: "Aptos Display", "Aptos", "Carlito", "Calibri", sans-serif;
+  font-size: 10pt;
+}
+table.presence td { border: 0.5pt solid #000; vertical-align: middle; padding: 0 1mm; }
+
+tr.r0 { height: 5.08mm; }
+tr.r1 { height: 8.47mm; }
+tr.r2 { height: 8.38mm; }
+tr.p  { height: 8.78mm; }
+
+.vert  { background: #E2EFD9; }
+.r0 td { background: #E2EFD9; font-weight: bold; text-align: center; }
+.h     { font-weight: bold; text-align: center; }
+.theme { font-weight: bold; text-align: center; }
+.lieu, .eff { text-align: center; }
+.perso { text-align: justify; padding-left: 5.6mm; text-indent: -4.6mm; }
+
+.cell-jour { text-align: center; padding: 0 0.3mm; line-height: 1.05; }
+.cell-jour .pa    { font-size: 8pt; display: block; }
+.cell-jour .heure { font-size: 7pt; display: block; }
+
+/* ── Badges QR ── */
+.badge-page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 210mm;
+  height: 297mm;
+  box-sizing: border-box;
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3mm;
+  box-sizing: border-box;
+  border: 0.3pt solid #bbb;
+  text-align: center;
+  font-family: sans-serif;
+  overflow: hidden;
+}
+
+.badge-qr { width: 55mm; height: 55mm; }
+.badge-qr svg { width: 100%; height: 100%; }
+
+.badge-nom {
+  font-size: 9pt;
+  font-weight: bold;
+  margin-top: 2mm;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.badge-id {
+  font-size: 8pt;
+  font-family: monospace;
+  color: #555;
+  margin-top: 1mm;
+  letter-spacing: 0.05em;
+}
+
+@media print {
+  body { margin: 0; }
+  table.presence { break-inside: avoid; }
+  tr { break-inside: avoid; }
+  .badge-page { break-after: page; }
+  .badge-page:last-child { break-after: avoid; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
