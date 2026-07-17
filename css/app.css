@@ -156,8 +156,148 @@ tr.p  { height: 8.78mm; }
 #screen-setup .danger { background: var(--danger); color: #fff; border: none; padding: 0.5em 1em; font-weight: bold; cursor: pointer; }
 #screen-setup .danger:disabled { background: var(--bord-2); cursor: not-allowed; }
 
-/* ── Bouton scan (démarrer/arrêter) ── */
-#btn-scan { z-index: 10; }
-#btn-scan:active { opacity: 0.8; }
+/* ── INTERFACE.md §5 — Écran Scan ── */
+#screen-scan {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Bande compteur */
+#scan-counter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  background: var(--vert-950);
+  flex-shrink: 0;
+}
+#scan-counter-left {
+  font-size: 12px;
+  color: var(--vert-300);
+}
+#scan-counter-right {
+  font-size: 12px;
+  color: var(--vert-300);
+}
+#scan-counter-right strong {
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
+}
+
+/* Bande caméra */
+#scan-camera {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #1c1c1c;
+  min-height: 0;
+}
+#scan-camera video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Réticule décoratif — la ROI réelle reste celle de camera.js */
+#scan-reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.ret-c {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-color: var(--vert-400);
+  border-style: solid;
+  border-width: 0;
+}
+.ret-tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-radius: 6px 0 0 0; }
+.ret-tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-radius: 0 6px 0 0; }
+.ret-bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 6px; }
+.ret-br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 6px 0; }
+
+/* Sélecteur flottant */
+#scan-selector {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  background: rgba(0,0,0,0.62);
+  border-radius: 20px;
+  padding: 3px;
+  gap: 2px;
+  z-index: 10;
+}
+.sel-btn {
+  border: none;
+  padding: 6px 14px;
+  border-radius: 17px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font);
+  background: transparent;
+  color: #e5e5e5;
+  cursor: pointer;
+  min-height: 32px;
+  -webkit-tap-highlight-color: transparent;
+}
+.sel-btn.active {
+  background: #fff;
+  color: var(--vert-900);
+}
+
+/* Panneau de retour */
+#scan-result {
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+#scan-result-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.result-icon {
+  stroke: #fff;
+  margin-bottom: 4px;
+}
+.result-sub {
+  font-size: 12px;
+  color: var(--vert-100);
+  line-height: 1.4;
+}
+.result-name {
+  font-size: 24px;
+  font-weight: 500;
+  color: #fff;
+  line-height: 1.25;
+  max-width: 100%;
+  /* PAS de text-overflow, PAS de white-space:nowrap, PAS de troncature */
+}
+.result-id {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: #bbf7d0;
+  margin-top: 2px;
+}
 
 } /* fin @media screen */
