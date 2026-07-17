@@ -53,7 +53,10 @@ test('PWA F3: icônes du manifest accessibles et PNG', async () => {
   const resp = await fetch('/manifest.webmanifest');
   const m = await resp.json();
   for (const icon of m.icons) {
-    const r = await fetch(icon.src);
+    // Les URLs du manifest se résolvent par rapport au manifest lui-même (spec Web App Manifest),
+    // pas par rapport à la page qui l'a chargé — d'où resp.url comme base, pas location.href.
+    const iconUrl = new URL(icon.src, resp.url).href;
+    const r = await fetch(iconUrl);
     assertEq(r.status, 200, `icône ${icon.src} introuvable`);
     assertEq(r.headers.get('Content-Type'), 'image/png', `${icon.src} doit être PNG`);
   }

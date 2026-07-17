@@ -232,6 +232,7 @@ Sur ordinateur : DevTools → Network → *Offline* → recharger. Utile pour it
 ```
 
 Et à la Definition of done du projet :
-- [ ] Protocole §3 passé sur l'iPhone **et** sur un Android
-- [ ] `ASSETS` vérifié contre `find` — zéro écart
-- [ ] `grep https://` → aucune ressource runtime
+- [x] Protocole §3 passé sur l'iPhone X (2026-07-17) — voir ETAT.md
+- [ ] Protocole §3 passé sur un Android — bloqué par l'appareil de test (Redmi, probable non-certification Play Protect), pas par le code. Voir ETAT.md « Mesures physiques ».
+- [x] `ASSETS` vérifié contre `find` — zéro écart (voir PASSATION-OFFLINE.md §2)
+- [x] `grep https://` → aucune ressource runtime (voir PASSATION-OFFLINE.md §2)

@@ -169,6 +169,26 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 | iPhone · ding AudioContext | Audible mais state = 'suspended' | DETTE : `await ctx.resume()` dans `initAudio()` |
 | Badges QR · impression + scan physique | Les 16 badges scannés et lus correctement. QR version 1-Q lisible sur papier, ~30 cm, éclairage néons. | ✅ FORMAT CONFIRMÉ — tous les badges validés |
 | Rapport PDF · impression réelle (largeurs) | — | ⚠️ EN ATTENTE avant le jour J |
+| iPhone X · mode avion, protocole CORRECTIF.md §3 intégral (install icône → tuer app → relancer avion → Scan/Liste/Rapport) | Tous les points du protocole passés | ✅ HORS-LIGNE VALIDÉ (C1) |
+| Android Redmi · installation PWA (icône écran d'accueil) | Play Store présent, menu ⋮ ne propose ni « Installer » ni « Ajouter à l'écran d'accueil », même après rechargement + attente + interaction | ⚠️ NON RÉSOLU — probable non-certification Play Protect de l'appareil (fréquent sur unités reflashées/importées). Le manifest, les icônes et le SW sont conformes et vérifiés en ligne (curl) : ce n'est pas un défaut de notre code. Repli : raccourci simple sans mode standalone. Ne pas rouvrir sans nouvel appareil Android à tester. |
+
+---
+
+## Correctif hors-ligne — 2026-07-17
+
+**Contexte** : voir `CORRECTIF.md` et `PASSATION-OFFLINE.md` (agent précédent, échec non résolu, hypothèse de bug en aval du SW).
+
+**Diagnostic refait à partir du code réel** (pas des verdicts de la passation) : reproduction du protocole CORRECTIF.md §3 en Chromium (Playwright, profil propre) sur le code déjà committé (`bim-v5`) → **succès intégral, zéro requête échouée, zéro erreur, les 4 écrans se rendent hors-ligne**. Aucune des 7 causes n'était donc en faute dans le code final ; l'échec rapporté dans la passation est très probablement dû à un état de navigateur non nettoyé entre les itérations `bim-v3→v4→v5` (chevauchement avec la Cause 5, qui prévient justement contre ce piège).
+
+**Seule anomalie réelle trouvée** : `sw.js` avait été corrigé en chemins relatifs (`./...`) par la tentative précédente, mais `index.html` et `manifest.webmanifest` étaient restés en chemins absolus (`/...`), et `register()` forçait `{ scope: '/' }`. Incohérence issue d'un correctif partiellement appliqué — sans conséquence fonctionnelle tant que le site est servi à la racine (c'est le cas sur Netlify), mais violait la règle explicite de CORRECTIF.md §2 (« Tous les chemins en `./` relatif ») et restait fragile pour rien.
+
+- **Fichiers modifiés** : `index.html` (chemins `./`, `register('./sw.js')` sans scope forcé), `manifest.webmanifest` (chemins `./`, `"scope": "./"` explicite), `sw.js` (CACHE bump uniquement)
+- **CACHE incrémenté** : `bim-v5` → `bim-v6`
+- **Vérifié en ligne** (`curl` sur `https://pointage-qr-bim.netlify.app/`) : manifest JSON valide, icônes 192×192 et 512×512 exactes (PNG RGBA), `sw.js` avec `Service-Worker-Allowed: /`, `index.html` avec les chemins relatifs corrects
+- **Protocole §3** : passé intégralement sur **iPhone X** le 2026-07-17 ✅
+- **Entrées en cache** : 29 (= 29 fichiers ASSETS), vérifié en local (Chromium clean) et via les en-têtes en ligne
+- **Test régressé puis corrigé** : `test/pwa.test.js` — « icônes du manifest accessibles et PNG » supposait une résolution d'URL relative à la page de test, pas au manifest (contrairement au comportement réel des navigateurs). Corrigé pour résoudre `icon.src` via `new URL(icon.src, resp.url)`.
+- **Android** : non résolu — voir tableau Mesures physiques ci-dessus. Cause probable hors code (certification Play Protect de l'appareil testé).
 
 ---
 
@@ -224,7 +244,7 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 20. **Module-level state dans screen-list.js.** `_previousFiltered` est module-level et persiste entre les appels de `filtrerParticipants`. Chaque test doit appeler `resetFilter()` explicitement, sinon les résultats des tests suivants deviennent indéterministes.
 21. **`importerFichier()`/`exporterFichier()` dépendent du DOM.** Créent et cliquent des éléments HTML (`<a download>`, `<input type="file">`). Non testables en Node, ni dans le harnais actuel (pas de simulation de file dialog).
 22. **`loadAllPointages` non atomique au niveau applicatif.** Si le navigateur plante entre `os.clear()` et le premier `os.put()`, les données sont perdues. Acceptable en PWA avec service worker (pas de crash intempestif en salle).
-23. **Chemins relatifs dans le manifest PWA.** Le manifest.webmanifest est résolu depuis la page courante. Depuis `/test/index.html`, `assets/icon-192.png` → `/test/assets/icon-192.png` (404). Toujours utiliser des chemins absolus (`/assets/icon-192.png`).
+23. **~~Chemins absolus dans le manifest PWA~~ — corrigé le 2026-07-17, ne pas revenir en arrière.** Un navigateur résout les URLs du manifest (`start_url`, `icons[].src`) par rapport au **manifest lui-même**, pas par rapport à la page qui l'a chargé. Les chemins relatifs (`./assets/icon-192.png`) sont donc corrects et portables (marchent à n'importe quel sous-chemin de déploiement), contrairement aux chemins absolus (`/assets/...`) qui cassent tout déploiement hors racine. Le piège n'est pas dans le manifest : c'est `test/pwa.test.js` qui faisait `fetch(icon.src)` en le résolvant par rapport à la page de test (`/test/`) au lieu du manifest — corrigé via `new URL(icon.src, resp.url)`. Voir correctif hors-ligne du 2026-07-17.
 
 ---
 
