@@ -21,7 +21,8 @@
 | 15 | 🔴 `sw.js`, `manifest` — PWA (cache-first, addAll) | `sw.js`, `manifest.webmanifest`, `index.html`, `js/main.js`, `assets/icon-192.png`, `assets/icon-512.png`, `test/pwa.test.js` | 9 tests 🔴 (statique ✓, navigateur nécessaire) | — | 2026-07-16 |
 | 16 | Déploiement + install | `netlify.toml`, `test/deploy.test.js` | 9/9 (deploy config) | — | 2026-07-16 |
 | AB-1 | Absences : calculs purs + seuil config | `js/model/absences.js`, `js/config.js`, `test/absences.test.js` | 13/13 | — | 2026-07-20 |
-  
+| AB-2 | store `absences` + migration IndexedDB | `js/db/store.js`, `test/store.test.js` | 21/21 store.test.js (dont ST-A1–A5 + ST-A2bis) + 114 tests amont inchangés | — | 2026-07-20 |
+
 ---
 
 ## Décisions prises hors spec
@@ -152,6 +153,18 @@ Les tests de registration SW et de précache (caches.open, cache.match) nécessi
 ### Portrait choisi sans mesure réelle (étape 11)
 Tableau d'essai créé (`test/tableau-essai.html`) mais pas imprimé. Décision : portrait. Si l'impression montre un problème → `@page landscape`.
 
+### `DB_VERSION` 2 → 3, store `absences` créé conditionnellement (AB-2)
+`onupgradeneeded` ajoute UNIQUEMENT `if (!db.objectStoreNames.contains('absences'))`, comme les 3 stores existants. Aucun store existant n'est recréé ni vidé. ST-A1 vérifie qu'une base pleine de pointages (actifs et annulés) + un `device` en `meta` survit intégralement à la migration.
+
+### `ajouterAbsence` génère l'`id` en interne (AB-2)
+ABSENCES.md §6.1 appelle `ajouterAbsence({ numero, dateJour, depart, retour: null, motif })` sans `id` : le champ n'est pas fourni par l'appelant. Décision : la fonction génère l'`id` (même stratégie `crypto.randomUUID()` + repli que `getOrCreateDeviceId`) et le retourne.
+
+### `cloturerAbsence` / `modifierMotifAbsence` / `supprimerAbsence` ne retournent pas de statut (AB-2)
+Contrairement à `reg`/`cancel` (qui retournent `{resultat}` pour piloter l'UI de scan), le §3.2 d'ABSENCES.md ne spécifie aucun contrat de retour pour ces trois fonctions. Décision : suivre le style de `deletePointage`/`savePointage` existants — des Promises qui se résolvent sans valeur. Si un `id` inconnu est passé à `cloturerAbsence`/`modifierMotifAbsence`, la fonction ne fait rien (pas d'erreur levée). Cette décision est ouverte à révision dès qu'AB-3 (saisie écran Liste) aura un besoin concret de feedback d'erreur.
+
+### `listerAbsences(dateJour)` utilise l'index `dateJour` d'IndexedDB (AB-2)
+`os.getAll()` sans argument liste tout ; `os.index('dateJour').getAll(dateJour)` filtre côté IndexedDB plutôt qu'en mémoire après un `getAll()` complet. Cohérent avec l'index créé au §3.2.
+
 ---
 
 ## Écarts assumés par rapport à la spec
@@ -218,6 +231,8 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 - `backup.js` : `exporterFichier` et `importerFichier` non testables en Node (manque DOM). Les tests DOM ne passent qu'au navigateur.
 - `backup.js` : `importerFusion` suppose que store a `loadAllPointages`. Si `store.clearAll()` est ajouté plus tard, refactorer pour l'utiliser.
 - `test/pwa.test.js` : tests navigateur uniquement (SW registration, Cache API). Vérification statique automatisée, le test complet nécessite ouverture manuelle de `/test/index.html`.
+- `store.js` : les 5 fonctions absences (AB-2) ne sont appelées par aucune UI pour l'instant — AB-3 (saisie écran Liste + seuil) a été annulé sur demande explicite (reconstruction depuis zéro) et reste à refaire. Voir « Prochaine étape ».
+- Suite de tests navigateur (`test/index.html`) : en Playwright headless, l'exécution se bloque silencieusement juste après `feedback.test.js`, avant `screen-scan.test.js` (probablement lié à `getUserMedia`/`AudioContext` sans device réel). Pré-existant, sans rapport avec AB-2. Contournement utilisé pour valider AB-2 : page de test isolée n'important que `store.test.js`, plus vérification que les 114 tests en amont (jusqu'à `feedback.test.js` inclus) passent toujours dans le run complet.
 
 ---
 
@@ -246,6 +261,7 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 21. **`importerFichier()`/`exporterFichier()` dépendent du DOM.** Créent et cliquent des éléments HTML (`<a download>`, `<input type="file">`). Non testables en Node, ni dans le harnais actuel (pas de simulation de file dialog).
 22. **`loadAllPointages` non atomique au niveau applicatif.** Si le navigateur plante entre `os.clear()` et le premier `os.put()`, les données sont perdues. Acceptable en PWA avec service worker (pas de crash intempestif en salle).
 23. **~~Chemins absolus dans le manifest PWA~~ — corrigé le 2026-07-17, ne pas revenir en arrière.** Un navigateur résout les URLs du manifest (`start_url`, `icons[].src`) par rapport au **manifest lui-même**, pas par rapport à la page qui l'a chargé. Les chemins relatifs (`./assets/icon-192.png`) sont donc corrects et portables (marchent à n'importe quel sous-chemin de déploiement), contrairement aux chemins absolus (`/assets/...`) qui cassent tout déploiement hors racine. Le piège n'est pas dans le manifest : c'est `test/pwa.test.js` qui faisait `fetch(icon.src)` en le résolvant par rapport à la page de test (`/test/`) au lieu du manifest — corrigé via `new URL(icon.src, resp.url)`. Voir correctif hors-ligne du 2026-07-17.
+24. **`test/index.html` complet se bloque en Playwright headless juste après `feedback.test.js`.** Aucune erreur affichée dans le harnais, aucun test suivant ne s'exécute (`screen-scan.test.js` et au-delà). Cause probable : `getUserMedia`/`AudioContext` sans device réel en tête de ces suites. Pour valider un module isolé (ex. `store.test.js`) en CLI, créer une page de test temporaire n'important que ce fichier plutôt que d'attendre la fin du run complet.
 
 ---
 
@@ -269,4 +285,4 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 ---
 ## Prochaine étape
 
-AB-2 : store `absences` + migration IndexedDB (ABSENCES.md §10).
+AB-3 : saisie écran Liste + réglage seuil (ABSENCES.md §6, §7, §10).

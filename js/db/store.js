@@ -3,7 +3,7 @@ import { idDe } from '../model/ident.js';
 import { getConfig } from '../config.js';
 
 const DB_NAME = 'bim-pointage';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 function participantDeCle(cle) {
   const id = cle.split('|')[0];
@@ -25,9 +25,60 @@ function openDB(name) {
       if (!db.objectStoreNames.contains('meta')) {
         db.createObjectStore('meta', { keyPath: 'k' });
       }
+      if (!db.objectStoreNames.contains('absences')) {
+        const as = db.createObjectStore('absences', { keyPath: 'id' });
+        as.createIndex('numero', 'numero', { unique: false });
+        as.createIndex('dateJour', 'dateJour', { unique: false });
+      }
     };
     r.onsuccess = () => resolve(r.result);
     r.onerror = () => reject(r.error);
+  });
+}
+
+function randomId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const a = new Uint32Array(4);
+  crypto.getRandomValues(a);
+  return a.join('-');
+}
+
+function putAbsence(db, absence) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('absences', 'readwrite');
+    tx.objectStore('absences').put(absence);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function getAbsence(db, id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('absences', 'readonly');
+    const r = tx.objectStore('absences').get(id);
+    r.onsuccess = () => resolve(r.result || null);
+    r.onerror = () => reject(r.error);
+  });
+}
+
+function deleteAbsence(db, id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('absences', 'readwrite');
+    tx.objectStore('absences').delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function getAllAbsences(db, dateJour) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('absences', 'readonly');
+    const os = tx.objectStore('absences');
+    const req = dateJour === undefined
+      ? os.getAll()
+      : os.index('dateJour').getAll(dateJour);
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
   });
 }
 
@@ -171,6 +222,32 @@ export async function initDB(dbName) {
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
       });
+    },
+
+    async ajouterAbsence(absence) {
+      const id = randomId();
+      await putAbsence(db, { ...absence, id });
+      return id;
+    },
+
+    async cloturerAbsence(id, retour) {
+      const a = await getAbsence(db, id);
+      if (a == null) return;
+      await putAbsence(db, { ...a, retour });
+    },
+
+    async modifierMotifAbsence(id, motif) {
+      const a = await getAbsence(db, id);
+      if (a == null) return;
+      await putAbsence(db, { ...a, motif });
+    },
+
+    async supprimerAbsence(id) {
+      await deleteAbsence(db, id);
+    },
+
+    async listerAbsences(dateJour) {
+      return getAllAbsences(db, dateJour);
     },
 
     close() {
