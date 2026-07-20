@@ -21,6 +21,7 @@
 | 15 | 🔴 `sw.js`, `manifest` — PWA (cache-first, addAll) | `sw.js`, `manifest.webmanifest`, `index.html`, `js/main.js`, `assets/icon-192.png`, `assets/icon-512.png`, `test/pwa.test.js` | 9 tests 🔴 (statique ✓, navigateur nécessaire) | — | 2026-07-16 |
 | 16 | Déploiement + install | `netlify.toml`, `test/deploy.test.js` | 9/9 (deploy config) | — | 2026-07-16 |
 | AB-1 | Absences : calculs purs + seuil config | `js/model/absences.js`, `js/config.js`, `test/absences.test.js` | 13/13 | — | 2026-07-20 |
+| AB-2 | store `absences` + migration IndexedDB | `js/db/store.js`, `test/store.test.js` | 5/5 (ST-A1–A5) + 113 existants | — | 2026-07-20 |
   
 ---
 
@@ -269,4 +270,4 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 ---
 ## Prochaine étape
 
-AB-2 : store `absences` + migration IndexedDB (ABSENCES.md §10).
+AB-3 : saisie écran Liste + réglage seuil (ABSENCES.md §10).

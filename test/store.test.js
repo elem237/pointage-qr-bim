@@ -282,3 +282,156 @@ test('P4.3 — deux pointages sur clés distinctes coexistent', async () => {
     await deleteDB(n);
   }
 });
+
+// ─── AB-2 : Store absences + migration IndexedDB ───────────
+
+function openV2Direct(name) {
+  return new Promise((resolve, reject) => {
+    const r = indexedDB.open(name, 2);
+    r.onupgradeneeded = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains('pointages')) {
+        db.createObjectStore('pointages', { keyPath: 'cle' });
+      }
+      if (!db.objectStoreNames.contains('meta')) {
+        db.createObjectStore('meta', { keyPath: 'k' });
+      }
+    };
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+  });
+}
+
+test('ST-A1 — migration : base v2 pleine de pointages survit sans perte', async () => {
+  const n = name();
+  const db1 = await openV2Direct(n);
+
+  await new Promise((resolve, reject) => {
+    const tx = db1.transaction('pointages', 'readwrite');
+    tx.objectStore('pointages').put({ cle: CLE1, generation: 0, statut: 'actif', tau: TAU, mode: 'scan', device: 'dev1', override: 'auto' });
+    tx.objectStore('pointages').put({ cle: CLE2, generation: 1, statut: 'annule', tau: TAU2, mode: 'manuel', device: 'dev1', override: 'midi' });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  await new Promise((resolve, reject) => {
+    const tx = db1.transaction('meta', 'readwrite');
+    tx.objectStore('meta').put({ k: 'device', v: 'dev1' });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db1.close();
+
+  const s = await initDB(n);
+  try {
+    assertEq(s.getPointages().size, 2, '2 pointages après migration');
+    const p1 = s.getPointages().get(CLE1);
+    assert(p1 != null, 'CLE1 présent');
+    assertEq(p1.statut, 'actif');
+    assertEq(p1.generation, 0);
+    assertEq(p1.tau, TAU);
+    assertEq(p1.mode, 'scan');
+    assertEq(p1.device, 'dev1');
+    assertEq(p1.override, 'auto');
+
+    const p2 = s.getPointages().get(CLE2);
+    assert(p2 != null, 'CLE2 présent');
+    assertEq(p2.statut, 'annule');
+    assertEq(p2.generation, 1);
+
+    const abs = s.listerAbsences();
+    assert(Array.isArray(abs), 'listerAbsences retourne un tableau');
+    assertEq(abs.length, 0, 'store absences créé et vide');
+  } finally {
+    s.close();
+    await deleteDB(n);
+  }
+});
+
+test('ST-A2 — ajouterAbsence puis listerAbsences', async () => {
+  const n = name();
+  const s = await initDB(n);
+  try {
+    const id = await s.ajouterAbsence({
+      id: 'a1', numero: 3, dateJour: '2026-08-04',
+      depart: 1000, retour: null, motif: '',
+    });
+    assertEq(id, 'a1');
+
+    const all = s.listerAbsences();
+    assertEq(all.length, 1);
+    assertEq(all[0].numero, 3);
+    assertEq(all[0].dateJour, '2026-08-04');
+
+    const jour = s.listerAbsences('2026-08-04');
+    assertEq(jour.length, 1);
+
+    const autre = s.listerAbsences('2026-08-05');
+    assertEq(autre.length, 0);
+  } finally {
+    s.close();
+    await deleteDB(n);
+  }
+});
+
+test('ST-A3 — cloturerAbsence renseigne retour', async () => {
+  const n = name();
+  const s = await initDB(n);
+  try {
+    const id = await s.ajouterAbsence({
+      id: 'a2', numero: 5, dateJour: '2026-08-04',
+      depart: 2000, retour: null, motif: '',
+    });
+    assertEq(s.listerAbsences()[0].retour, null);
+
+    await s.cloturerAbsence(id, 5000);
+    const a = s.listerAbsences()[0];
+    assertEq(a.retour, 5000);
+  } finally {
+    s.close();
+    await deleteDB(n);
+  }
+});
+
+test('ST-A4 — supprimerAbsence efface', async () => {
+  const n = name();
+  const s = await initDB(n);
+  try {
+    await s.ajouterAbsence({
+      id: 'a3', numero: 7, dateJour: '2026-08-05',
+      depart: 3000, retour: null, motif: 'rdv',
+    });
+    assertEq(s.listerAbsences().length, 1);
+
+    await s.supprimerAbsence('a3');
+    assertEq(s.listerAbsences().length, 0);
+  } finally {
+    s.close();
+    await deleteDB(n);
+  }
+});
+
+test('ST-A5 — operations absences ne touchent pas pointages/meta', async () => {
+  const n = name();
+  const s = await initDB(n);
+  try {
+    await s.reg(CLE1, TAU, 'scan', 'auto');
+    assertEq(s.getPointages().size, 1);
+
+    await s.ajouterAbsence({
+      id: 'a4', numero: 1, dateJour: '2026-08-04',
+      depart: 4000, retour: 5000, motif: '',
+    });
+    await s.cloturerAbsence('a4', 6000);
+    await s.modifierMotifAbsence('a4', 'test');
+    await s.supprimerAbsence('a4');
+
+    assertEq(s.getPointages().size, 1, 'pointages inchangés');
+    assertEq(s.getPointages().get(CLE1).statut, 'actif', 'statut pointage intact');
+
+    const all = s.listerAbsences();
+    assertEq(all.length, 0, 'absences vidées');
+  } finally {
+    s.close();
+    await deleteDB(n);
+  }
+});
