@@ -31,6 +31,7 @@ CLAUDE.md  >  SKILL.md  >  AJOUT.md  >  SPECIFICATIONS.md  >  FORMALISATION_MATH
 | `SPECIFICATIONS.md` | l'architecture et le §12 (ordre de construction) |
 | `FORMALISATION_MATHEMATIQUE_v2.md` | 🔒 **figé**. Le *pourquoi*, jamais le *quoi*. Lire ses **errata** avant de s'y fier |
 | `INTERFACE.md` | les 4 écrans. Gouverne l'apparence à l'écran, RIEN d'autre. |
+| `ABSENCES.md` | signalement des absences. Système SÉPARÉ des présences. |
 
 Hiérarchie : CLAUDE.md > SKILL.md > AJOUT.md > INTERFACE.md > SPECIFICATIONS.md
 ⚠️ La refonte UI ne touche JAMAIS js/model/, js/db/, js/scan/, ni print.css.

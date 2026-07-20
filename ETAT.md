@@ -20,7 +20,8 @@
 | 14 | Écran Liste + import/export (§9 D1–D4, §6.5) | `js/ui/screen-list.js`, `js/db/backup.js`, `js/db/store.js` (+loadAllPointages), `test/backup.test.js`, `test/screen-list.test.js`, `test/index.html` | 234/234 (10 backup + 15 screen-list) | — | 2026-07-16 |
 | 15 | 🔴 `sw.js`, `manifest` — PWA (cache-first, addAll) | `sw.js`, `manifest.webmanifest`, `index.html`, `js/main.js`, `assets/icon-192.png`, `assets/icon-512.png`, `test/pwa.test.js` | 9 tests 🔴 (statique ✓, navigateur nécessaire) | — | 2026-07-16 |
 | 16 | Déploiement + install | `netlify.toml`, `test/deploy.test.js` | 9/9 (deploy config) | — | 2026-07-16 |
- 
+| AB-1 | Absences : calculs purs + seuil config | `js/model/absences.js`, `js/config.js`, `test/absences.test.js` | 13/13 | — | 2026-07-20 |
+  
 ---
 
 ## Décisions prises hors spec
@@ -266,14 +267,6 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 - `test/pwa.test.js:112` référence encore `bim-v1` — obsolète depuis `bim-v7`.
 
 ---
-
 ## Prochaine étape
 
-À déterminer par l'opérateur. Reste à faire (liste non priorisée) :
-- ✅ Test physique badges : tous les 16 QR scannés et lus correctement
-- ⚠️ Test physique rapport : imprimer sur imprimante réelle, mesurer les largeurs
-- ⚠️ Test physique PWA : mode avion, installation Android/iOS
-- ✅ `main.js` — routeur 4 écrans (Scan, Rapport, Liste, Réglages) + barre de navigation
-- `store.clearAll()` + 6 champs modifiables dans screen-setup.js
-- ✅ Déploiement HTTPS — `netlify.toml` créé (headers MIME, SW, sécurité, redirect SPA)
-- ⚠️ Installation Android/iOS depuis Netlify/GitHub Pages
+AB-2 : store `absences` + migration IndexedDB (ABSENCES.md §10).

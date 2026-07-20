@@ -22,6 +22,8 @@ export const DEFAULTS = Object.freeze({
   MULTI_APPAREILS: false,
 
   SCHEMA_VERSION: 2,
+
+  SEUIL_ABSENCE_MIN: 20,
 });
 
 let _overrides = {};
