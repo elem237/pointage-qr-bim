@@ -705,51 +705,6 @@ tr.p  { height: 8.78mm; }
   text-align: center;
 }
 
-/* Absence indicator (ABSENCES.md §6.4) — couleur neutre --txt-2 */
-.ls-absence-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-left: 24px;
-  width: 100%;
-  font-size: 11px;
-  color: var(--txt-2);
-}
-.ls-absence-tag {
-  display: inline-flex;
-  align-items: center;
-}
-.ls-absence-action {
-  border: 1px solid var(--bord-2);
-  background: transparent;
-  color: var(--txt-2);
-  font-family: var(--font);
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  min-height: 28px;
-  -webkit-tap-highlight-color: transparent;
-}
-.ls-absence-action:hover { background: var(--surf-1); }
-.ls-absence-field {
-  padding: 6px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--txt-2);
-}
-.ls-absence-field input {
-  font-family: var(--font);
-  font-size: 14px;
-  padding: 6px 10px;
-  border: 1px solid var(--bord-2);
-  border-radius: var(--r);
-  outline: none;
-}
-.ls-absence-field input:focus { border-color: var(--vert-500); }
-
 /* Légende */
 .ls-legend {
   display: flex;

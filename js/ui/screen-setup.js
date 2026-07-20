@@ -147,13 +147,6 @@ export function screenSetup(container, opts = {}) {
           '<button id="setup-import" class="setup-btn setup-btn--outline">Importer</button>' +
         '</div>' +
       '</section>' +
-      '<section class="setup-card">' +
-        '<h3 class="setup-card-title">Absences</h3>' +
-        '<label style="font-size:12px;color:var(--txt-2);display:flex;flex-direction:column;gap:4px">Seuil de signalement (minutes)' +
-          '<input type="number" id="setup-seuil-absence" value="' + cfg.SEUIL_ABSENCE_MIN + '" min="0" style="font-family:var(--font);font-size:14px;padding:6px 10px;border:1px solid var(--bord-2);border-radius:var(--r)">' +
-        '</label>' +
-        '<div style="font-size:11px;color:var(--txt-3);font-style:italic">Une absence plus courte n\u2019appara\u00eet pas dans le rapport. Une absence sans retour est toujours signal\u00e9e.</div>' +
-      '</section>' +
       '<section class="setup-card setup-card--danger">' +
         '<h3 class="setup-card-title" style="color:var(--danger)">Zone dangereuse</h3>' +
         '<p>Taper <strong>SUPPRIMER</strong> pour confirmer :</p>' +
@@ -180,10 +173,6 @@ export function screenSetup(container, opts = {}) {
     }
     if (e.target.id === 'setup-h-debut' || e.target.id === 'setup-h-bascule' || e.target.id === 'setup-h-fin') {
       appliquerCreneaux(container);
-    }
-    if (e.target.id === 'setup-seuil-absence') {
-      const val = parseInt(e.target.value, 10);
-      if (!isNaN(val) && val >= 0) mergeConfig({ SEUIL_ABSENCE_MIN: val });
     }
   });
 
@@ -258,8 +247,6 @@ export function screenSetup(container, opts = {}) {
       if (hd) hd.value = cfg.H_DEBUT_MATIN;
       if (hb) hb.value = cfg.H_BASCULE;
       if (hf) hf.value = cfg.H_FIN_MIDI;
-      const seuil = container.querySelector('#setup-seuil-absence');
-      if (seuil) seuil.value = cfg.SEUIL_ABSENCE_MIN;
       mettreAJourBanner(container);
     },
   };

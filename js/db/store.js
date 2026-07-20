@@ -3,7 +3,7 @@ import { idDe } from '../model/ident.js';
 import { getConfig } from '../config.js';
 
 const DB_NAME = 'bim-pointage';
-const DB_VERSION = 3;
+const DB_VERSION = 2;
 
 function participantDeCle(cle) {
   const id = cle.split('|')[0];
@@ -24,11 +24,6 @@ function openDB(name) {
       }
       if (!db.objectStoreNames.contains('meta')) {
         db.createObjectStore('meta', { keyPath: 'k' });
-      }
-      if (!db.objectStoreNames.contains('absences')) {
-        const abs = db.createObjectStore('absences', { keyPath: 'id' });
-        abs.createIndex('numero', 'numero', { unique: false });
-        abs.createIndex('dateJour', 'dateJour', { unique: false });
       }
     };
     r.onsuccess = () => resolve(r.result);
@@ -111,44 +106,11 @@ function deletePointage(db, cle) {
   });
 }
 
-function loadAbsences(db) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('absences', 'readonly');
-    const r = tx.objectStore('absences').getAll();
-    r.onsuccess = () => {
-      const rows = r.result || [];
-      const m = new Map();
-      for (const row of rows) m.set(row.id, row);
-      resolve(m);
-    };
-    r.onerror = () => reject(r.error);
-  });
-}
-
-function saveAbsence(db, absence) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('absences', 'readwrite');
-    tx.objectStore('absences').put(absence);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-function deleteAbsenceFromDB(db, id) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('absences', 'readwrite');
-    tx.objectStore('absences').delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
 export async function initDB(dbName) {
   if (dbName === undefined) dbName = DB_NAME;
   const db = await openDB(dbName);
   const pointages = await loadPointages(db);
   const deviceId = await getOrCreateDeviceId(db);
-  const absences = await loadAbsences(db);
 
   return {
     _dbName: dbName,
@@ -209,41 +171,6 @@ export async function initDB(dbName) {
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
       });
-    },
-
-    // ─── Absences (§3.2) ──────────────────────────────────
-
-    async ajouterAbsence(absence) {
-      absences.set(absence.id, absence);
-      await saveAbsence(db, absence);
-      return absence.id;
-    },
-
-    async cloturerAbsence(id, retour) {
-      const a = absences.get(id);
-      if (!a) throw new Error('Absence introuvable: ' + id);
-      a.retour = retour;
-      await saveAbsence(db, a);
-    },
-
-    async modifierMotifAbsence(id, motif) {
-      const a = absences.get(id);
-      if (!a) throw new Error('Absence introuvable: ' + id);
-      a.motif = motif;
-      await saveAbsence(db, a);
-    },
-
-    async supprimerAbsence(id) {
-      absences.delete(id);
-      await deleteAbsenceFromDB(db, id);
-    },
-
-    listerAbsences(dateJour) {
-      const all = [...absences.values()];
-      if (dateJour !== undefined) {
-        return all.filter(a => a.dateJour === dateJour);
-      }
-      return all;
     },
 
     close() {

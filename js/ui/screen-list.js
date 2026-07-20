@@ -13,27 +13,6 @@ function formatTau(tau) {
   return `${hh}h${mm}`;
 }
 
-function jourCourant(tNow) {
-  const d = new Date(tNow + 3600000);
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function formatTimeInput(ms) {
-  const d = new Date(ms + 3600000);
-  const hh = String(d.getUTCHours()).padStart(2, '0');
-  const mm = String(d.getUTCMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
-}
-
-function parseTimeInput(timeStr, dateStr) {
-  const [h, m] = timeStr.split(':').map(Number);
-  const [y, mo, d] = dateStr.split('-').map(Number);
-  return Date.UTC(y, mo - 1, d, h, m) - 3600000;
-}
-
 let _previousFiltered = null;
 
 export function filtrerParticipants(query) {
@@ -89,29 +68,14 @@ export function screenList(container, store, m, tNow = Date.now()) {
       const e = slotsEchus(tNow);
       list = list.filter(p => e.some(s => etatCellule(localM, p, s, tNow).type === 'absent'));
     }
-    const today = jourCourant(tNow);
-    const todayAbsences = store && typeof store.listerAbsences === 'function' ? store.listerAbsences(today) : [];
     listEl.innerHTML = list.map(p => {
       const pastilles = slots.map(s => pastilleHtml(p, s)).join('');
-      const pAbsences = todayAbsences.filter(a => a.numero === p.numero);
-      let absenceHtml = '';
-      if (pAbsences.length > 0) {
-        const openA = pAbsences.find(a => a.retour === null);
-        if (openA) {
-          absenceHtml = '<div class="ls-absence-info"><span class="ls-absence-tag">absent\u00b7e depuis ' + formatTau(openA.depart) + '</span>' +
-            '<button class="ls-absence-action" data-action="marquer-retour-rapide" data-absence-id="' + openA.id + '" data-numero="' + p.numero + '">Marquer le retour</button></div>';
-        } else {
-          const n = pAbsences.length;
-          absenceHtml = '<div class="ls-absence-info"><span class="ls-absence-tag">' + n + ' absence' + (n > 1 ? 's' : '') + ' signal\u00e9e' + (n > 1 ? 's' : '') + '</span></div>';
-        }
-      }
-      return '<div class="ls-row" data-numero="' + p.numero + '">' +
-        '<span class="ls-num">' + String(p.numero).padStart(2, '0') + '</span>' +
-        '<span class="ls-name">' + p.nomComplet + '</span>' +
-        '<button class="ls-menu-btn" data-action="menu" data-numero="' + p.numero + '" aria-label="Actions">\u22ef</button>' +
-        '<div class="ls-pastilles">' + pastilles + '</div>' +
-        absenceHtml +
-      '</div>';
+      return `<div class="ls-row" data-numero="${p.numero}">
+        <span class="ls-num">${String(p.numero).padStart(2, '0')}</span>
+        <span class="ls-name">${p.nomComplet}</span>
+        <button class="ls-menu-btn" data-action="menu" data-numero="${p.numero}" aria-label="Actions">\u22ef</button>
+        <div class="ls-pastilles">${pastilles}</div>
+      </div>`;
     }).join('');
   }
 
@@ -132,34 +96,11 @@ export function screenList(container, store, m, tNow = Date.now()) {
     const btn = container.querySelector(`.ls-menu-btn[data-numero="${numero}"]`);
     if (!btn) return;
 
-    const today = jourCourant(tNow);
-    const todayAbsences = store && typeof store.listerAbsences === 'function' ? store.listerAbsences(today) : [];
-    const openAbsence = todayAbsences.find(a => a.numero === numero && a.retour === null);
-    const closedAbsences = todayAbsences.filter(a => a.numero === numero && a.retour !== null);
-
     const popup = document.createElement('div');
     popup.className = 'ls-menu-popup';
-
-    let html = '<button class="ls-menu-item" data-action="pointer" data-numero="' + numero + '">Pointer manuellement</button>';
-
-    if (openAbsence) {
-      html += '<div class="ls-menu-item ls-menu-section">Absence en cours</div>' +
-        '<button class="ls-menu-item" data-action="marquer-retour" data-absence-id="' + openAbsence.id + '" data-numero="' + numero + '">Marquer le retour</button>' +
-        '<button class="ls-menu-item" data-action="modifier-motif" data-absence-id="' + openAbsence.id + '" data-numero="' + numero + '">Modifier le motif</button>' +
-        '<button class="ls-menu-item" data-action="supprimer-absence" data-absence-id="' + openAbsence.id + '" data-numero="' + numero + '">Supprimer l\u2019absence</button>';
-    } else {
-      html += '<button class="ls-menu-item" data-action="signaler-absence" data-numero="' + numero + '">Signaler une absence</button>';
-    }
-
-    for (const a of closedAbsences) {
-      const h = formatTau(a.depart);
-      html += '<button class="ls-menu-item" data-action="modifier-motif" data-absence-id="' + a.id + '" data-numero="' + numero + '">Modifier motif (' + h + ')</button>' +
-        '<button class="ls-menu-item" data-action="supprimer-absence" data-absence-id="' + a.id + '" data-numero="' + numero + '">Supprimer absence (' + h + ')</button>';
-    }
-
-    html += '<button class="ls-menu-item" data-action="cancel-open" data-numero="' + numero + '">Annuler</button>';
-
-    popup.innerHTML = html;
+    popup.innerHTML =
+      '<button class="ls-menu-item" data-action="pointer" data-numero="' + numero + '">Pointer manuellement</button>' +
+      '<button class="ls-menu-item" data-action="cancel-open" data-numero="' + numero + '">Annuler</button>';
     btn.parentNode.appendChild(popup);
 
     const closePopup = (e) => {
@@ -242,58 +183,6 @@ export function screenList(container, store, m, tNow = Date.now()) {
     setTimeout(() => document.addEventListener('click', closePopup), 0);
   }
 
-  function absenceForm(numero) {
-    const existing = container.querySelector('.ls-menu-popup');
-    if (existing) existing.remove();
-
-    const participant = PARTICIPANTS.find(p => p.numero === numero);
-    if (!participant) return;
-
-    const btn = container.querySelector(`.ls-menu-btn[data-numero="${numero}"]`);
-    if (!btn) return;
-
-    const popup = document.createElement('div');
-    popup.className = 'ls-menu-popup ls-menu-popup--wide';
-    popup.innerHTML =
-      '<div class="ls-menu-item ls-menu-section">Signaler une absence</div>' +
-      '<div class="ls-absence-field"><label>Heure de d\u00e9part</label><input type="time" id="ls-abs-depart" value="' + formatTimeInput(tNow) + '"></div>' +
-      '<div class="ls-absence-field"><label>Motif (facultatif)</label><input type="text" id="ls-abs-motif" placeholder="Motif si communiqu\u00e9 (facultatif)"></div>' +
-      '<button class="ls-menu-item ls-menu-action" data-action="do-signaler-absence" data-numero="' + numero + '">Enregistrer l\u2019absence</button>';
-    btn.parentNode.appendChild(popup);
-
-    const closePopup = (e) => {
-      if (!popup.contains(e.target) && e.target !== btn) {
-        popup.remove();
-        document.removeEventListener('click', closePopup);
-      }
-    };
-    setTimeout(() => document.addEventListener('click', closePopup), 0);
-  }
-
-  function motifEditForm(absenceId) {
-    const a = store && typeof store.listerAbsences === 'function' ? store.listerAbsences().find(x => x.id === absenceId) : null;
-    const existing = container.querySelector('.ls-menu-popup');
-    if (existing) existing.remove();
-
-    const popup = document.createElement('div');
-    popup.className = 'ls-menu-popup ls-menu-popup--wide';
-    popup.innerHTML =
-      '<div class="ls-menu-item ls-menu-section">Modifier le motif</div>' +
-      '<div class="ls-absence-field"><label>Motif</label><input type="text" id="ls-abs-motif-edit" value="' + (a ? a.motif : '') + '"></div>' +
-      '<button class="ls-menu-item ls-menu-action" data-action="do-modifier-motif" data-absence-id="' + absenceId + '">Enregistrer</button>';
-    const targetBtn = a ? container.querySelector(`.ls-menu-btn[data-numero="${a.numero}"]`) : null;
-    if (targetBtn && targetBtn.parentNode) targetBtn.parentNode.appendChild(popup);
-    else container.appendChild(popup);
-
-    const closePopup = (e) => {
-      if (!popup.contains(e.target) && e.target !== btn) {
-        popup.remove();
-        document.removeEventListener('click', closePopup);
-      }
-    };
-    setTimeout(() => document.addEventListener('click', closePopup), 0);
-  }
-
   function render() {
     const slots = tousLesSlots();
     container.innerHTML =
@@ -349,19 +238,6 @@ export function screenList(container, store, m, tNow = Date.now()) {
       return;
     }
 
-    const actionEl = e.target.closest('[data-action]');
-    if (actionEl && actionEl.dataset.action === 'marquer-retour-rapide') {
-      const id = actionEl.dataset.absenceId;
-      if (store && typeof store.cloturerAbsence === 'function') {
-        store.cloturerAbsence(id, Date.now()).then(() => {
-          const search = container.querySelector('#ls-search');
-          renderRows(search ? search.value : '', _currentFilter);
-          renderFilterPills();
-        });
-      }
-      return;
-    }
-
     const menuItem = e.target.closest('.ls-menu-item');
     if (!menuItem) return;
 
@@ -380,89 +256,6 @@ export function screenList(container, store, m, tNow = Date.now()) {
       const popup = menuItem.closest('.ls-menu-popup');
       if (popup) popup.remove();
       cancelSubmenu(num);
-      return;
-    }
-
-    if (action === 'signaler-absence') {
-      const num = parseInt(menuItem.dataset.numero, 10);
-      const popup = menuItem.closest('.ls-menu-popup');
-      if (popup) popup.remove();
-      absenceForm(num);
-      return;
-    }
-
-    if (action === 'do-signaler-absence') {
-      const num = parseInt(menuItem.dataset.numero, 10);
-      const popup = menuItem.closest('.ls-menu-popup');
-      const departEl = popup ? popup.querySelector('#ls-abs-depart') : null;
-      const motifEl = popup ? popup.querySelector('#ls-abs-motif') : null;
-      if (popup) popup.remove();
-      if (!departEl) return;
-      const today = jourCourant(tNow);
-      const departMs = parseTimeInput(departEl.value, today);
-      const motif = motifEl ? motifEl.value : '';
-      const id = crypto.randomUUID();
-      if (store && typeof store.ajouterAbsence === 'function') {
-        store.ajouterAbsence({ id, numero: num, dateJour: today, depart: departMs, retour: null, motif }).then(() => {
-          const search = container.querySelector('#ls-search');
-          renderRows(search ? search.value : '', _currentFilter);
-          renderFilterPills();
-        });
-      }
-      return;
-    }
-
-    if (action === 'marquer-retour') {
-      const id = menuItem.dataset.absenceId;
-      const popup = menuItem.closest('.ls-menu-popup');
-      if (popup) popup.remove();
-      if (store && typeof store.cloturerAbsence === 'function') {
-        store.cloturerAbsence(id, Date.now()).then(() => {
-          const search = container.querySelector('#ls-search');
-          renderRows(search ? search.value : '', _currentFilter);
-          renderFilterPills();
-        });
-      }
-      return;
-    }
-
-    if (action === 'do-modifier-motif') {
-      const id = menuItem.dataset.absenceId;
-      const popup = menuItem.closest('.ls-menu-popup');
-      const motifEl = popup ? popup.querySelector('#ls-abs-motif-edit') : null;
-      if (popup) popup.remove();
-      if (store && typeof store.modifierMotifAbsence === 'function' && motifEl) {
-        store.modifierMotifAbsence(id, motifEl.value).then(() => {
-          const search = container.querySelector('#ls-search');
-          renderRows(search ? search.value : '', _currentFilter);
-          renderFilterPills();
-        });
-      }
-      return;
-    }
-
-    if (action === 'modifier-motif') {
-      const id = menuItem.dataset.absenceId;
-      const popup = menuItem.closest('.ls-menu-popup');
-      if (popup) popup.remove();
-      motifEditForm(id);
-      return;
-    }
-
-    if (action === 'supprimer-absence') {
-      const id = menuItem.dataset.absenceId;
-      const num = parseInt(menuItem.dataset.numero, 10);
-      const participant = PARTICIPANTS.find(p => p.numero === num);
-      const popup = menuItem.closest('.ls-menu-popup');
-      if (popup) popup.remove();
-      if (!confirm('Supprimer l\u2019absence de ' + (participant ? participant.nomComplet : '') + ' ?')) return;
-      if (store && typeof store.supprimerAbsence === 'function') {
-        store.supprimerAbsence(id).then(() => {
-          const search = container.querySelector('#ls-search');
-          renderRows(search ? search.value : '', _currentFilter);
-          renderFilterPills();
-        });
-      }
       return;
     }
 
