@@ -62,6 +62,7 @@ function montrerScreen(nom) {
       break;
     case 'setup':
       _screenCtrl = screenSetup(container, {
+        store: _store,
         onClearAll: async () => {
           if (_store) {
             const m = _store.getPointages();

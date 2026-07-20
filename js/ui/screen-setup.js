@@ -140,6 +140,11 @@ export function screenSetup(container, opts = {}) {
         '<div class="setup-creneaux-note">Les pauses sont incluses dans les cr\u00e9neaux.</div>' +
       '</section>' +
       '<section class="setup-card">' +
+        '<h3 class="setup-card-title">Absences</h3>' +
+        '<label class="setup-abs-field">Seuil de signalement (minutes) <input type="number" id="setup-seuil-absence" min="0" step="1" value="' + cfg.SEUIL_ABSENCE_MIN + '"></label>' +
+        '<div class="setup-creneaux-note">Une absence plus courte n’apparaît pas dans le rapport. Une absence sans retour est toujours signalée.</div>' +
+      '</section>' +
+      '<section class="setup-card">' +
         '<h3 class="setup-card-title">Badges et sauvegarde</h3>' +
         '<div class="setup-card-actions">' +
           '<button id="setup-print-badges" class="setup-btn setup-btn--primary">Imprimer la planche</button>' +
@@ -173,6 +178,16 @@ export function screenSetup(container, opts = {}) {
     }
     if (e.target.id === 'setup-h-debut' || e.target.id === 'setup-h-bascule' || e.target.id === 'setup-h-fin') {
       appliquerCreneaux(container);
+    }
+    if (e.target.id === 'setup-seuil-absence') {
+      const val = parseInt(e.target.value, 10);
+      if (Number.isNaN(val)) return;
+      const store = opts.store;
+      if (store && typeof store.setSeuilAbsence === 'function') {
+        store.setSeuilAbsence(val);
+      } else {
+        mergeConfig({ SEUIL_ABSENCE_MIN: val });
+      }
     }
   });
 
@@ -247,6 +262,8 @@ export function screenSetup(container, opts = {}) {
       if (hd) hd.value = cfg.H_DEBUT_MATIN;
       if (hb) hb.value = cfg.H_BASCULE;
       if (hf) hf.value = cfg.H_FIN_MIDI;
+      const seuil = container.querySelector('#setup-seuil-absence');
+      if (seuil) seuil.value = cfg.SEUIL_ABSENCE_MIN;
       mettreAJourBanner(container);
     },
   };

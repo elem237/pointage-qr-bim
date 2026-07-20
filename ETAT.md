@@ -22,6 +22,7 @@
 | 16 | Déploiement + install | `netlify.toml`, `test/deploy.test.js` | 9/9 (deploy config) | — | 2026-07-16 |
 | AB-1 | Absences : calculs purs + seuil config | `js/model/absences.js`, `js/config.js`, `test/absences.test.js` | 13/13 | — | 2026-07-20 |
 | AB-2 | store `absences` + migration IndexedDB | `js/db/store.js`, `test/store.test.js` | 21/21 store.test.js (dont ST-A1–A5 + ST-A2bis) + 114 tests amont inchangés | — | 2026-07-20 |
+| AB-3 | saisie d'absence (écran Liste) + seuil paramétrable (Réglages) | `js/ui/screen-list.js`, `js/ui/screen-setup.js`, `js/db/store.js` (+`setSeuilAbsence`, hydratation seuil au boot), `js/main.js` (+`store` transmis à `screenSetup`), `css/app.css` | 73/73 purs + 21/21 store.test.js + 18/18 ui-list/ui-setup + smoke Playwright réel (signaler/retour/seuil persistant) | — | 2026-07-20 |
 
 ---
 
@@ -165,6 +166,24 @@ Contrairement à `reg`/`cancel` (qui retournent `{resultat}` pour piloter l'UI d
 ### `listerAbsences(dateJour)` utilise l'index `dateJour` d'IndexedDB (AB-2)
 `os.getAll()` sans argument liste tout ; `os.index('dateJour').getAll(dateJour)` filtre côté IndexedDB plutôt qu'en mémoire après un `getAll()` complet. Cohérent avec l'index créé au §3.2.
 
+### `jourCourant()` dupliqué dans `screen-list.js` (AB-3)
+Même pattern que `formatTau` (3 copies déjà existantes) : `slots.js` n'exporte pas de fonction « date locale Douala à partir d'un epoch », donc `screen-list.js` la recalcule inline (`new Date(tNow + 3600000)` → `getUTCFullYear/Month/Date`). Volontairement indépendant de `slotDe` : une absence doit pouvoir être signalée même hors fenêtre de créneau (ex. juste avant l'ouverture), alors que `slotDe(t)` retournerait `null`.
+
+### `screen-list.js` charge les absences de façon asynchrone après le premier rendu (AB-3)
+`store.listerAbsences(dateJour)` est une Promise (IndexedDB). Le premier `render()` peint la liste sans indicateur d'absence, puis `loadAbsences().then(...)` re-peint dès que la promesse résout — même schéma que `getCacheStatus()` dans `screen-setup.js` (étape 12). Aucun test existant ne dépend d'un rendu synchrone incluant les absences.
+
+### Action « active » du menu ⋯ pour Modifier le motif / Supprimer (AB-3)
+ABSENCES.md §6.3 ne précise pas quelle absence corriger quand plusieurs existent le même jour pour un participant (le §4.5 admet explicitement « une même personne peut s'absenter deux fois »). Décision : l'absence « active » est l'absence ouverte (`retour: null`) s'il y en a une, sinon la plus récente (triée par `depart`). Les actions Modifier le motif / Supprimer ciblent cette absence active ; Signaler une absence reste toujours disponible indépendamment (permet plusieurs absences par jour).
+
+### Indicateur multi-absences : total des durées, pas la dernière seule (AB-3)
+ABSENCES.md §6.4 donne un seul exemple (« 1 absence signalée (00:47) ») sans préciser le cas de plusieurs absences closes le même jour. Décision : `n absences signalées (SOMME des durées)`. Cohérent avec l'esprit du §4.2 (« on capture tout, on filtre au rapport ») — rien n'est masqué à l'opérateur.
+
+### `store.setSeuilAbsence(min)` persiste dans `meta` puis appelle `mergeConfig`, jamais `hydrateConfig` (AB-3)
+ABSENCES.md §7 dit « via store meta + hydrateConfig, jamais DEFAULTS » — lu comme « le mécanisme d'hydratation de config », pas littéralement l'appel `hydrateConfig(o)` (qui *remplace* tous les overrides). `mergeConfig` est le mécanisme incrémental déjà établi (étape 12, `DATES`) : il ne clobber pas les autres réglages (ex. `DATES` de mode test) au moment où `initDB()` relit le seuil stocké au boot.
+
+### `main.js` corrigé pour transmettre `store` à `screenSetup` (AB-3, hors portée ABSENCES.md — validé explicitement)
+Découvert en testant le seuil de bout en bout (Playwright réel + reload) : `montrerScreen('setup')` n'appelait jamais `screenSetup(container, { store: _store, ... })` — `opts.store` était `undefined`. Conséquence : le seuil (comme les boutons Exporter/Importer de Réglages, déjà présents avant AB-3) semblait fonctionner à l'écran mais ne persistait jamais en IndexedDB, silencieusement. `main.js` n'est pas dans la portée autorisée d'`ABSENCES.md` (« js/config.js, absences.js, store.js, screen-list.js, screen-setup.js, screen-report.js bas de page, print.css. RIEN d'autre. ») : la correction (1 ligne, ajout de `store: _store`) a été explicitement validée par l'utilisateur avant d'être appliquée, conformément à la règle CLAUDE.md §4 (arrêter et demander plutôt qu'étendre la portée seul).
+
 ---
 
 ## Écarts assumés par rapport à la spec
@@ -285,4 +304,4 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 ---
 ## Prochaine étape
 
-AB-3 : saisie écran Liste + réglage seuil (ABSENCES.md §6, §7, §10).
+AB-4 : bloc rapport + `print.css` (ABSENCES.md §8, §10). Puis, après AB-4 : ajouter `js/model/absences.js` à `ASSETS` de `sw.js` et incrémenter `CACHE` (§10, dette explicite — sinon la fonctionnalité casse le hors-ligne).

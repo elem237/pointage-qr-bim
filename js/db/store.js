@@ -1,6 +1,6 @@
 import { PARTICIPANTS } from '../data.js';
 import { idDe } from '../model/ident.js';
-import { getConfig } from '../config.js';
+import { getConfig, mergeConfig } from '../config.js';
 
 const DB_NAME = 'bim-pointage';
 const DB_VERSION = 3;
@@ -162,6 +162,8 @@ export async function initDB(dbName) {
   const db = await openDB(dbName);
   const pointages = await loadPointages(db);
   const deviceId = await getOrCreateDeviceId(db);
+  const seuilStocke = await getMeta(db, 'seuilAbsenceMin');
+  if (seuilStocke !== undefined) mergeConfig({ SEUIL_ABSENCE_MIN: seuilStocke });
 
   return {
     _dbName: dbName,
@@ -248,6 +250,11 @@ export async function initDB(dbName) {
 
     async listerAbsences(dateJour) {
       return getAllAbsences(db, dateJour);
+    },
+
+    async setSeuilAbsence(min) {
+      await setMeta(db, 'seuilAbsenceMin', min);
+      mergeConfig({ SEUIL_ABSENCE_MIN: min });
     },
 
     close() {

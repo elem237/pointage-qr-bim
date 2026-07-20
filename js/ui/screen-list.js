@@ -5,12 +5,17 @@ import { idDe } from '../model/ident.js';
 import { tousLesSlots, slotDe, cle as slotCle } from '../model/slots.js';
 import { etatCellule, slotsEchus } from '../model/report.js';
 import { serialiser, exporterFichier, importerFichier, importerFusion } from '../db/backup.js';
+import { dureeMinutes, formatDuree } from '../model/absences.js';
 
 function formatTau(tau) {
   const d = new Date(tau + 3600000);
   const hh = String(d.getUTCHours()).padStart(2, '0');
   const mm = String(d.getUTCMinutes()).padStart(2, '0');
   return `${hh}h${mm}`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 let _previousFiltered = null;
@@ -38,8 +43,49 @@ export function screenList(container, store, m, tNow = Date.now()) {
   const echus = slotsEchus(tNow);
   const slots = tousLesSlots();
   let localM = m;
+  let localAbsences = [];
 
   resetFilter();
+
+  function jourCourant() {
+    const d = new Date(tNow + 3600000);
+    return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+  }
+
+  function loadAbsences() {
+    if (!store || typeof store.listerAbsences !== 'function') {
+      localAbsences = [];
+      return Promise.resolve();
+    }
+    return store.listerAbsences(jourCourant()).then(list => {
+      localAbsences = list || [];
+    });
+  }
+
+  function absencesDe(numero) {
+    return localAbsences.filter(a => a.numero === numero);
+  }
+
+  function absenceIndicatorHtml(numero) {
+    const abs = absencesDe(numero);
+    if (abs.length === 0) return '';
+    const open = abs.find(a => a.retour == null);
+    if (open) {
+      return '<div class="ls-abs-indicator">absent·e depuis ' + formatTau(open.depart) + '</div>';
+    }
+    const total = abs.reduce((s, a) => s + (dureeMinutes(a) || 0), 0);
+    const n = abs.length;
+    return '<div class="ls-abs-indicator">' + n + ' absence' + (n > 1 ? 's' : '') +
+      ' signalée' + (n > 1 ? 's' : '') + ' (' + formatDuree(total) + ')</div>';
+  }
+
+  function rafraichirApresMutation() {
+    return loadAbsences().then(() => {
+      const search = container.querySelector('#ls-search');
+      renderRows(search ? search.value : '', _currentFilter);
+      renderFilterPills();
+    });
+  }
 
   function absentsCount() {
     const e = slotsEchus(tNow);
@@ -70,11 +116,13 @@ export function screenList(container, store, m, tNow = Date.now()) {
     }
     listEl.innerHTML = list.map(p => {
       const pastilles = slots.map(s => pastilleHtml(p, s)).join('');
+      const absHtml = absenceIndicatorHtml(p.numero);
       return `<div class="ls-row" data-numero="${p.numero}">
         <span class="ls-num">${String(p.numero).padStart(2, '0')}</span>
         <span class="ls-name">${p.nomComplet}</span>
         <button class="ls-menu-btn" data-action="menu" data-numero="${p.numero}" aria-label="Actions">\u22ef</button>
         <div class="ls-pastilles">${pastilles}</div>
+        ${absHtml}
       </div>`;
     }).join('');
   }
@@ -96,11 +144,26 @@ export function screenList(container, store, m, tNow = Date.now()) {
     const btn = container.querySelector(`.ls-menu-btn[data-numero="${numero}"]`);
     if (!btn) return;
 
+    const abs = absencesDe(numero).slice().sort((a, b) => a.depart - b.depart);
+    const open = abs.find(a => a.retour == null) || null;
+    const active = open || (abs.length ? abs[abs.length - 1] : null);
+
+    let absItems = '<button class="ls-menu-item" data-action="abs-add" data-numero="' + numero + '">Signaler une absence</button>';
+    if (open) {
+      absItems += '<button class="ls-menu-item" data-action="abs-close" data-id="' + open.id + '" data-numero="' + numero + '">Marquer le retour</button>';
+    }
+    if (active) {
+      absItems += '<button class="ls-menu-item" data-action="abs-motif-open" data-id="' + active.id + '" data-numero="' + numero + '">Modifier le motif</button>';
+      absItems += '<button class="ls-menu-item" data-action="abs-delete" data-id="' + active.id + '" data-numero="' + numero + '">Supprimer l’absence</button>';
+    }
+
     const popup = document.createElement('div');
     popup.className = 'ls-menu-popup';
     popup.innerHTML =
       '<button class="ls-menu-item" data-action="pointer" data-numero="' + numero + '">Pointer manuellement</button>' +
-      '<button class="ls-menu-item" data-action="cancel-open" data-numero="' + numero + '">Annuler</button>';
+      '<button class="ls-menu-item" data-action="cancel-open" data-numero="' + numero + '">Annuler</button>' +
+      '<div class="ls-menu-sep"></div>' +
+      absItems;
     btn.parentNode.appendChild(popup);
 
     const closePopup = (e) => {
@@ -183,6 +246,55 @@ export function screenList(container, store, m, tNow = Date.now()) {
     setTimeout(() => document.addEventListener('click', closePopup), 0);
   }
 
+  function absAddForm(numero) {
+    const existing = container.querySelector('.ls-menu-popup');
+    if (existing) existing.remove();
+
+    const now = new Date(tNow + 3600000);
+    const hh = String(now.getUTCHours()).padStart(2, '0');
+    const mm = String(now.getUTCMinutes()).padStart(2, '0');
+
+    const popup = document.createElement('div');
+    popup.className = 'ls-menu-popup ls-menu-popup--wide ls-abs-popup';
+    popup.innerHTML =
+      '<div class="ls-menu-item ls-menu-section">Signaler une absence</div>' +
+      '<label class="ls-abs-field">Heure de départ <input type="time" class="ls-abs-depart" value="' + hh + ':' + mm + '"></label>' +
+      '<label class="ls-abs-field">Motif <input type="text" class="ls-abs-motif" placeholder="Motif si communiqué (facultatif)"></label>' +
+      '<button class="ls-menu-item ls-menu-action" data-action="abs-save" data-numero="' + numero + '">Enregistrer l’absence</button>' +
+      '<button class="ls-menu-item" data-action="abs-form-cancel">Annuler</button>';
+    const btn = container.querySelector(`.ls-menu-btn[data-numero="${numero}"]`);
+    if (btn && btn.parentNode) btn.parentNode.appendChild(popup);
+    const closePopup = (e) => {
+      if (!popup.contains(e.target) && e.target !== btn) {
+        popup.remove();
+        document.removeEventListener('click', closePopup);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closePopup), 0);
+  }
+
+  function absMotifForm(numero, id, currentMotif) {
+    const existing = container.querySelector('.ls-menu-popup');
+    if (existing) existing.remove();
+
+    const popup = document.createElement('div');
+    popup.className = 'ls-menu-popup ls-menu-popup--wide ls-abs-popup';
+    popup.innerHTML =
+      '<div class="ls-menu-item ls-menu-section">Modifier le motif</div>' +
+      '<label class="ls-abs-field">Motif <input type="text" class="ls-abs-motif" value="' + escapeHtml(currentMotif || '') + '"></label>' +
+      '<button class="ls-menu-item ls-menu-action" data-action="abs-motif-save" data-id="' + id + '">Enregistrer</button>' +
+      '<button class="ls-menu-item" data-action="abs-form-cancel">Annuler</button>';
+    const btn = container.querySelector(`.ls-menu-btn[data-numero="${numero}"]`);
+    if (btn && btn.parentNode) btn.parentNode.appendChild(popup);
+    const closePopup = (e) => {
+      if (!popup.contains(e.target) && e.target !== btn) {
+        popup.remove();
+        document.removeEventListener('click', closePopup);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closePopup), 0);
+  }
+
   function render() {
     const slots = tousLesSlots();
     container.innerHTML =
@@ -213,6 +325,11 @@ export function screenList(container, store, m, tNow = Date.now()) {
 
     renderRows('', 'all');
     renderFilterPills();
+    loadAbsences().then(() => {
+      const search = container.querySelector('#ls-search');
+      renderRows(search ? search.value : '', _currentFilter);
+      renderFilterPills();
+    });
   }
 
   render();
@@ -318,6 +435,74 @@ export function screenList(container, store, m, tNow = Date.now()) {
       });
       return;
     }
+
+    if (action === 'abs-add') {
+      const num = parseInt(menuItem.dataset.numero, 10);
+      const popup = menuItem.closest('.ls-menu-popup');
+      if (popup) popup.remove();
+      absAddForm(num);
+      return;
+    }
+
+    if (action === 'abs-form-cancel') {
+      const popup = menuItem.closest('.ls-menu-popup');
+      if (popup) popup.remove();
+      return;
+    }
+
+    if (action === 'abs-save') {
+      const num = parseInt(menuItem.dataset.numero, 10);
+      const popup = menuItem.closest('.ls-menu-popup');
+      const hhmm = popup ? popup.querySelector('.ls-abs-depart')?.value : null;
+      const motif = popup ? (popup.querySelector('.ls-abs-motif')?.value || '') : '';
+      if (popup) popup.remove();
+      if (!hhmm) return;
+
+      const [hh, mm] = hhmm.split(':').map(Number);
+      const jour = jourCourant();
+      const [y, mo, d] = jour.split('-').map(Number);
+      const depart = Date.UTC(y, mo - 1, d, hh, mm) - 3600000;
+
+      store.ajouterAbsence({ numero: num, dateJour: jour, depart, retour: null, motif })
+        .then(rafraichirApresMutation);
+      return;
+    }
+
+    if (action === 'abs-close') {
+      const id = menuItem.dataset.id;
+      const popup = menuItem.closest('.ls-menu-popup');
+      if (popup) popup.remove();
+      store.cloturerAbsence(id, tNow).then(rafraichirApresMutation);
+      return;
+    }
+
+    if (action === 'abs-motif-open') {
+      const num = parseInt(menuItem.dataset.numero, 10);
+      const id = menuItem.dataset.id;
+      const popup = menuItem.closest('.ls-menu-popup');
+      if (popup) popup.remove();
+      const abs = localAbsences.find(a => a.id === id);
+      absMotifForm(num, id, abs ? abs.motif : '');
+      return;
+    }
+
+    if (action === 'abs-motif-save') {
+      const id = menuItem.dataset.id;
+      const popup = menuItem.closest('.ls-menu-popup');
+      const motif = popup ? (popup.querySelector('.ls-abs-motif')?.value || '') : '';
+      if (popup) popup.remove();
+      store.modifierMotifAbsence(id, motif).then(rafraichirApresMutation);
+      return;
+    }
+
+    if (action === 'abs-delete') {
+      const id = menuItem.dataset.id;
+      const popup = menuItem.closest('.ls-menu-popup');
+      if (popup) popup.remove();
+      if (!confirm('Supprimer cette absence ?')) return;
+      store.supprimerAbsence(id).then(rafraichirApresMutation);
+      return;
+    }
   });
 
   const searchInput = container.querySelector('#ls-search');
@@ -352,9 +537,11 @@ export function screenList(container, store, m, tNow = Date.now()) {
       localM = newM || store.getPointages();
       tNow = newTNow || Date.now();
       _previousFiltered = null;
-      const search = container.querySelector('#ls-search');
-      renderRows(search ? search.value : '', _currentFilter);
-      renderFilterPills();
+      loadAbsences().then(() => {
+        const search = container.querySelector('#ls-search');
+        renderRows(search ? search.value : '', _currentFilter);
+        renderFilterPills();
+      });
     },
   };
 }

@@ -232,6 +232,10 @@ tr.p  { height: 8.78mm; }
 .setup-creneaux-info { font-size: 11px; color: var(--txt-2); }
 .setup-creneaux-note { font-size: 11px; color: var(--txt-3); font-style: italic; }
 
+/* Absences (ABSENCES.md §7) */
+.setup-abs-field { display: flex; flex-direction: column; font-size: 12px; color: var(--txt-2); gap: 4px; max-width: 220px; }
+.setup-abs-field input { font-family: var(--font); font-size: 14px; padding: 6px 10px; border: 1px solid var(--bord-2); border-radius: var(--r); }
+
 /* Footer */
 #setup-footer { font-size: 11px; color: var(--txt-3); text-align: center; padding: 8px 0; }
 
@@ -659,6 +663,14 @@ tr.p  { height: 8.78mm; }
 .ls-pastille--absent  { background: var(--a-bg); color: var(--a-fg); }
 .ls-pastille--vide    { background: var(--v-bg); color: var(--v-fg); }
 
+/* Indicateur d'absence (ABSENCES.md §6.4) — --txt-2, jamais les couleurs d'état */
+.ls-abs-indicator {
+  width: 100%;
+  padding-left: 24px;
+  font-size: 11px;
+  color: var(--txt-2);
+}
+
 /* Menu popup */
 .ls-menu-popup {
   position: absolute;
@@ -703,6 +715,27 @@ tr.p  { height: 8.78mm; }
   color: var(--vert-900);
   font-weight: 500;
   text-align: center;
+}
+.ls-menu-sep {
+  height: 1px;
+  background: var(--bord);
+  margin: 4px 0;
+}
+.ls-abs-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--txt-2);
+}
+.ls-abs-field input {
+  font-family: var(--font);
+  font-size: 14px;
+  padding: 6px 10px;
+  border: 1px solid var(--bord-2);
+  border-radius: var(--r);
+  min-height: 36px;
 }
 
 /* Légende */
