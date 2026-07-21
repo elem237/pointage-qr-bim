@@ -73,7 +73,7 @@ export function buildA4Html(m, tNow, absences = []) {
 
   const absencesHtml = absences.length > 0 ? buildAbsencesBlock(absences) : '';
 
-  return `<div class="page">
+  return `<div class="report-print"><div class="page">
     <img class="band" src="${HEADER_BAND}" alt="">
     <table class="presence">
       <colgroup>
@@ -99,7 +99,7 @@ export function buildA4Html(m, tNow, absences = []) {
       </tbody>
     </table>
     <img class="band footer" src="${FOOTER_BAND}" alt="">
-  </div>${absencesHtml}`;
+  </div>${absencesHtml}</div>`;
 }
 
 function agrandir(a4Html) {
@@ -141,24 +141,27 @@ export function screenReport(container, m, tNow = Date.now(), store = null) {
   }).join('');
 
   container.innerHTML = `<div id="screen-report">
-    <div id="report-taux">
-      <div id="report-taux-value">${t !== null ? Math.round(t * 100) + '%' : '—'}</div>
-      <div id="report-taux-label">${t !== null ? 'taux global &middot; ' + echus.length + ' cr\u00e9neaux \u00e9chus' : 'aucun cr\u00e9neau \u00e9chu'}</div>
-    </div>
-    <div id="report-grid">
-      ${gridHtml}
-    </div>
-    <div id="report-preview">
-      <div id="report-preview-container">
-        ${a4Html}
+    <div class="report-screen-only">
+      <div id="report-taux">
+        <div id="report-taux-value">${t !== null ? Math.round(t * 100) + '%' : '—'}</div>
+        <div id="report-taux-label">${t !== null ? 'taux global &middot; ' + echus.length + ' cr\u00e9neaux \u00e9chus' : 'aucun cr\u00e9neau \u00e9chu'}</div>
       </div>
-      <div id="report-tap-hint">Toucher pour agrandir</div>
+      <div id="report-grid">
+        ${gridHtml}
+      </div>
+      <div id="report-preview">
+        <div id="report-preview-container">
+          ${a4Html}
+        </div>
+        <div id="report-tap-hint">Toucher pour agrandir</div>
+      </div>
+      <button id="report-print">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Imprimer le rapport
+      </button>
+      <div id="report-note">Impression depuis iPhone : rendu \u00e0 88 % &middot; Proportions exactes</div>
     </div>
-    <button id="report-print">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      Imprimer le rapport
-    </button>
-    <div id="report-note">Impression depuis iPhone : rendu \u00e0 88 % &middot; Proportions exactes</div>
+    ${a4Html}
   </div>`;
 
   const preview = container.querySelector('#report-preview');
@@ -175,6 +178,8 @@ export function screenReport(container, m, tNow = Date.now(), store = null) {
       a4Html = buildA4Html(m, tNow, rapportable);
       const previewContainer = container.querySelector('#report-preview-container');
       if (previewContainer) previewContainer.innerHTML = a4Html;
+      const printContainer = container.querySelector('.report-print');
+      if (printContainer) printContainer.outerHTML = a4Html;
     });
   }
 

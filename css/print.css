@@ -83,6 +83,22 @@ tr.p  { height: 8.78mm; }
   .badge-page { break-after: page; }
   .badge-page:last-child { break-after: avoid; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* CORRECTIF-IMPRESSION.md §4 — masquer écran, révéler rapport */
+  body * { visibility: hidden; }
+  .report-print, .report-print * { visibility: visible; }
+  .report-print {
+    position: absolute;
+    top: 0; left: 0;
+    width: 210mm;
+    padding-bottom: 22mm;
+  }
+  .report-screen-only,
+  .report-overlay,
+  .app-nav {
+    display: none !important;
+  }
+  .band.footer { position: fixed; bottom: 0; left: 0; width: 210mm; height: 35mm; top: auto; }
 }
 
 /* ═══════════ ABSENCES (ABSENCES.md §8) ═══════════ */
