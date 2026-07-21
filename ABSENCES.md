@@ -317,13 +317,15 @@ Nouvelle étape, insérée APRÈS l'étape 13 (Liste + Réglages existants) et l
 
 ## 11. Definition of done
 
-- [ ] Une absence de 47 min avec motif → phrase + motif dans le PDF
-- [ ] Une absence de 12 min (seuil 20) → **absente du PDF**
-- [ ] Une absence sans retour → « à partir de HH:MM, non revenu·e », toujours imprimée
-- [ ] Une absence sans motif → phrase + espace souligné à remplir
-- [ ] Seuil modifiable en Réglages, pris en compte au rapport
-- [ ] Aucune absence ce jour → aucun bloc « Absences signalées »
-- [ ] Le tableau du rapport est **pixel-identique** à avant (SKILL.md préservé)
-- [ ] Une base de pointages existante survit à la migration IndexedDB
-- [ ] `absences.js` est dans le précache du service worker, CACHE incrémenté
+- [x] Une absence de 47 min avec motif → phrase + motif dans le PDF
+- [x] Une absence de 12 min (seuil 20) → **absente du PDF**
+- [x] Une absence sans retour → « à partir de HH:MM, non revenu·e », toujours imprimée
+- [x] Une absence sans motif → phrase + espace souligné à remplir
+- [x] Seuil modifiable en Réglages, pris en compte au rapport
+- [x] Aucune absence ce jour → aucun bloc « Absences signalées »
+- [x] Le tableau du rapport est **pixel-identique** à avant (SKILL.md préservé)
+- [x] Une base de pointages existante survit à la migration IndexedDB
+- [x] `absences.js` est dans le précache du service worker, CACHE incrémenté
 - [ ] **Physique** : signaler une absence, marquer un retour, imprimer, vérifier la phrase
+
+> Les 9 premières cases sont couvertes par les tests AB4-R1–R6 et les tests de non-régression (RG1, RG3, RG4). La case « Physique » nécessite un test sur appareil réel.

@@ -1,9 +1,10 @@
 import { test, assert, assertEq } from './harness.js';
-import { screenReport } from '../js/ui/screen-report.js';
+import { screenReport, buildA4Html } from '../js/ui/screen-report.js';
 import { PARTICIPANTS } from '../js/data.js';
 import { idDe } from '../js/model/ident.js';
 import { getConfig } from '../js/config.js';
 import { tousLesSlots } from '../js/model/slots.js';
+import { trierAbsences } from '../js/model/absences.js';
 
 const cfg = getConfig();
 const TZ = cfg.TZ_OFFSET_MIN * 60 * 1000;
@@ -217,4 +218,67 @@ test('P18 — bandes en base64', () => {
   for (const b of bands) {
     assert(b.getAttribute('src').startsWith('data:image/'), 'base64');
   }
+});
+
+// ─── AB4 : Absences dans le rapport ─────────────────────
+
+function absVal(numero, depart, retour, motif) {
+  return { id: 'a-' + numero + '-' + depart, numero, dateJour: '2026-08-04', depart, retour, motif };
+}
+
+test('AB4-RG4 — buildA4Html sans absences → pas de bloc', () => {
+  const html = buildA4Html(new Map(), douala(2026, 7, 4, 18, 0));
+  assert(!html.includes('bloc-absences'), 'pas de bloc');
+});
+
+test('AB4-R1 — buildA4Html avec absence terminée → bloc + phrase durée', () => {
+  const dep = douala(2026, 7, 4, 10, 15);
+  const ret = douala(2026, 7, 4, 11, 2);
+  const abs = [absVal(3, dep, ret, '')];
+  const html = buildA4Html(new Map(), douala(2026, 7, 4, 18, 0), abs);
+  assert(html.includes('bloc-absences'), 'bloc present');
+  assert(html.includes('Absences signal\u00e9es'), 'titre present');
+  assert(html.includes('NGOUDJO'), 'nom present');
+  assert(html.includes('00:47'), 'duree presente');
+});
+
+test('AB4-R2 — buildA4Html absence non revenu·e → phrase "à partir de"', () => {
+  const dep = douala(2026, 7, 4, 10, 15);
+  const abs = [absVal(3, dep, null, '')];
+  const html = buildA4Html(new Map(), douala(2026, 7, 4, 18, 0), abs);
+  assert(html.includes('bloc-absences'));
+  assert(html.includes('partir de 10h15'));
+  assert(html.includes('non revenu'));
+});
+
+test('AB4-R3 — buildA4Html absence avec motif → "Motif : rdv."', () => {
+  const dep = douala(2026, 7, 4, 10, 15);
+  const ret = douala(2026, 7, 4, 11, 2);
+  const abs = [absVal(3, dep, ret, 'rdv')];
+  const html = buildA4Html(new Map(), douala(2026, 7, 4, 18, 0), abs);
+  assert(html.includes('Motif : rdv.'), 'motif present');
+  assert(!html.includes('_______'), 'pas d\'underscores');
+});
+
+test('AB4-R4 — buildA4Html absence sans motif → "Motif : ______"', () => {
+  const dep = douala(2026, 7, 4, 10, 15);
+  const ret = douala(2026, 7, 4, 11, 2);
+  const abs = [absVal(3, dep, ret, '')];
+  const html = buildA4Html(new Map(), douala(2026, 7, 4, 18, 0), abs);
+  assert(html.includes('Motif : ________________________________'), 'underscores');
+});
+
+test('AB4-R5 — deux absences triées par numero puis depart', () => {
+  const t = douala(2026, 7, 4, 18, 0);
+  const a1 = absVal(5, douala(2026, 7, 4, 9, 0), douala(2026, 7, 4, 9, 30), '');
+  const a2 = absVal(3, douala(2026, 7, 4, 10, 0), douala(2026, 7, 4, 10, 45), '');
+  const abs = trierAbsences([a1, a2]);
+  const html = buildA4Html(new Map(), t, abs);
+  // numero 3 avant numero 5
+  const idx3 = html.indexOf('AKOLEO');  // participant 4 = AKOLEO
+  const idx5 = html.indexOf('ENAM');    // participant 5 = ENAM
+  // Adjust: participant 3 is NGOUDJO, 4 is AKOLEO, 5 is ENAM
+  const idxN3 = html.indexOf('NGOUDJO');
+  const idxN5 = html.indexOf('ENAM');
+  assert(idxN3 < idxN5, 'ordre par numero');
 });

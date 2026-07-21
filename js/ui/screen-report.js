@@ -3,6 +3,7 @@ import { PARTICIPANTS } from '../data.js';
 import { etatCellule, theta, slotsEchus, presents } from '../model/report.js';
 import { tousLesSlots } from '../model/slots.js';
 import { HEADER_BAND, FOOTER_BAND } from '../../assets/logos.js';
+import { estRapportable, phraseAbsence, trierAbsences } from '../model/absences.js';
 
 function formatTau(tau) {
   const d = new Date(tau + 3600000);
@@ -25,7 +26,24 @@ function cellulesJour(participant, tNow, m) {
   }).join('');
 }
 
-function buildA4Html(m, tNow) {
+function buildAbsencesBlock(absences) {
+  const listItems = absences.map(a => {
+    const p = PARTICIPANTS.find(pp => pp.numero === a.numero);
+    const nom = p ? p.nomComplet : `Participant n\u00b0${a.numero}`;
+    const { phrase, motif } = phraseAbsence(a, nom);
+    let html = `<div class="abs">\u2022\u00a0\u00a0${phrase}`;
+    if (motif) {
+      html += `<div class="motif">Motif : ${motif}.</div>`;
+    } else {
+      html += `<div class="motif">Motif : ________________________________</div>`;
+    }
+    html += `</div>`;
+    return html;
+  }).join('');
+  return `<div class="bloc-absences"><h2>Absences signal\u00e9es</h2>${listItems}</div>`;
+}
+
+export function buildA4Html(m, tNow, absences = []) {
   const cfg = getConfig();
   const slots = tousLesSlots();
 
@@ -53,6 +71,8 @@ function buildA4Html(m, tNow) {
     }
   }
 
+  const absencesHtml = absences.length > 0 ? buildAbsencesBlock(absences) : '';
+
   return `<div class="page">
     <img class="band" src="${HEADER_BAND}" alt="">
     <table class="presence">
@@ -79,7 +99,7 @@ function buildA4Html(m, tNow) {
       </tbody>
     </table>
     <img class="band footer" src="${FOOTER_BAND}" alt="">
-  </div>`;
+  </div>${absencesHtml}`;
 }
 
 function agrandir(a4Html) {
@@ -99,11 +119,11 @@ function agrandir(a4Html) {
   document.body.appendChild(overlay);
 }
 
-export function screenReport(container, m, tNow = Date.now()) {
+export function screenReport(container, m, tNow = Date.now(), store = null) {
   const t = theta(m, tNow);
   const echus = slotsEchus(tNow);
   const slots = tousLesSlots();
-  const a4Html = buildA4Html(m, tNow);
+  let a4Html = buildA4Html(m, tNow);
 
   const gridHtml = slots.map(slot => {
     const isEchu = echus.some(e => e.date === slot.date && e.creneau === slot.creneau);
@@ -146,9 +166,21 @@ export function screenReport(container, m, tNow = Date.now()) {
 
   container.querySelector('#report-print').addEventListener('click', () => window.print());
 
+  if (store) {
+    store.listerAbsences().then(allAbsences => {
+      const cfg = getConfig();
+      const seuil = cfg.SEUIL_ABSENCE_MIN;
+      const rapportable = trierAbsences(allAbsences.filter(a => estRapportable(a, seuil)));
+      if (rapportable.length === 0) return;
+      a4Html = buildA4Html(m, tNow, rapportable);
+      const previewContainer = container.querySelector('#report-preview-container');
+      if (previewContainer) previewContainer.innerHTML = a4Html;
+    });
+  }
+
   return {
     refresh: (newM, newTNow) => {
-      screenReport(container, newM, newTNow || Date.now());
+      screenReport(container, newM, newTNow || Date.now(), store);
     },
   };
 }

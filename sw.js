@@ -1,4 +1,4 @@
-const CACHE = 'bim-v7';
+const CACHE = 'bim-v8';
 
 const ASSETS = [
   './index.html',
@@ -13,6 +13,7 @@ const ASSETS = [
   './js/db/store.js',
   './js/db/backup.js',
   './js/model/norm.js',
+  './js/model/absences.js',
   './js/model/ident.js',
   './js/model/lattice.js',
   './js/model/slots.js',

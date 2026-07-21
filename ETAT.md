@@ -23,6 +23,7 @@
 | AB-1 | Absences : calculs purs + seuil config | `js/model/absences.js`, `js/config.js`, `test/absences.test.js` | 13/13 | — | 2026-07-20 |
 | AB-2 | store `absences` + migration IndexedDB | `js/db/store.js`, `test/store.test.js` | 21/21 store.test.js (dont ST-A1–A5 + ST-A2bis) + 114 tests amont inchangés | — | 2026-07-20 |
 | AB-3 | saisie d'absence (écran Liste) + seuil paramétrable (Réglages) | `js/ui/screen-list.js`, `js/ui/screen-setup.js`, `js/db/store.js` (+`setSeuilAbsence`, hydratation seuil au boot), `js/main.js` (+`store` transmis à `screenSetup`), `css/app.css` | 73/73 purs + 21/21 store.test.js + 18/18 ui-list/ui-setup + smoke Playwright réel (signaler/retour/seuil persistant) | — | 2026-07-20 |
+| AB-4 | bloc rapport + `print.css` + précache `absences.js` | `js/ui/screen-report.js` (+buildA4Html absences, store→screenReport), `css/print.css` (section ABSENCES NOUVELLE), `js/main.js` (+pass store), `sw.js` (+absences.js, bim-v8) | 24/24 screen-report.test.js (dont 6 AB4-R*) + 13/13 absences.test.js + RG1✅ RG3✅ RG4✅ | — | 2026-07-21 |
 
 ---
 
@@ -250,8 +251,8 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 - `backup.js` : `exporterFichier` et `importerFichier` non testables en Node (manque DOM). Les tests DOM ne passent qu'au navigateur.
 - `backup.js` : `importerFusion` suppose que store a `loadAllPointages`. Si `store.clearAll()` est ajouté plus tard, refactorer pour l'utiliser.
 - `test/pwa.test.js` : tests navigateur uniquement (SW registration, Cache API). Vérification statique automatisée, le test complet nécessite ouverture manuelle de `/test/index.html`.
-- `store.js` : les 5 fonctions absences (AB-2) ne sont appelées par aucune UI pour l'instant — AB-3 (saisie écran Liste + seuil) a été annulé sur demande explicite (reconstruction depuis zéro) et reste à refaire. Voir « Prochaine étape ».
 - Suite de tests navigateur (`test/index.html`) : en Playwright headless, l'exécution se bloque silencieusement juste après `feedback.test.js`, avant `screen-scan.test.js` (probablement lié à `getUserMedia`/`AudioContext` sans device réel). Pré-existant, sans rapport avec AB-2. Contournement utilisé pour valider AB-2 : page de test isolée n'important que `store.test.js`, plus vérification que les 114 tests en amont (jusqu'à `feedback.test.js` inclus) passent toujours dans le run complet.
+- `screen-report.js`: le chargement des absences est async (IndexedDB). Le premier rendu du rapport n'affiche pas d'absences ; elles apparaissent après résolution de `store.listerAbsences()`. L'aperçu cliquable (`agrandir`) utilise la variable `a4Html` mise à jour après chargement. Si l'utilisateur clique avant la fin du chargement, l'overlay montre la version sans absences — acceptable en pratique (IndexedDB local, < 10 ms).
 
 ---
 
@@ -304,4 +305,4 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 ---
 ## Prochaine étape
 
-AB-4 : bloc rapport + `print.css` (ABSENCES.md §8, §10). Puis, après AB-4 : ajouter `js/model/absences.js` à `ASSETS` de `sw.js` et incrémenter `CACHE` (§10, dette explicite — sinon la fonctionnalité casse le hors-ligne).
+Aucune — toutes les étapes du projet sont terminées. Prochaine action : déploiement de `bim-v8` et recette finale avec le client.

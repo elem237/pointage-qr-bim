@@ -55,7 +55,7 @@ function montrerScreen(nom) {
       _screenCtrl = screenScan(container, _store);
       break;
     case 'report':
-      _screenCtrl = screenReport(container, m, tNow);
+      _screenCtrl = screenReport(container, m, tNow, _store);
       break;
     case 'list':
       _screenCtrl = screenList(container, _store, m, tNow);
