@@ -7,7 +7,7 @@ export const DEFAULTS = Object.freeze({
   THEME:   'Initiation au processus BIM dans la gestion des projets Immobiliers',
   LIEU:    'DOUALA',
   NUMERO_THEME: 3,
-  DATES:   ['2026-08-04', '2026-08-05', '2026-08-06'],
+  DATES:   [],
   TZ_OFFSET_MIN: 60,
 
   H_DEBUT_MATIN: '07:00',

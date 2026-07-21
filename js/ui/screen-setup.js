@@ -1,18 +1,13 @@
-import { DEFAULTS, getConfig, mergeConfig } from '../config.js';
+import { getConfig, mergeConfig } from '../config.js';
 import { renderBadges } from '../badges.js';
 import { serialiser, exporterFichier, importerFichier, importerFusion } from '../db/backup.js';
 
-const DATES_RELLES = DEFAULTS.DATES;
-const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-
-function estModeTest(dates) {
-  return dates.join(',') !== DATES_RELLES.join(',');
-}
-
-function formatRange(dates) {
-  const jours = dates.map(d => parseInt(d.split('-')[2], 10));
-  const m = parseInt(dates[0].split('-')[1], 10) - 1;
-  return jours[0] + '\u2013' + jours[2] + ' ' + MOIS[m];
+function datesValides(dates) {
+  if (!Array.isArray(dates) || dates.length !== 3) return false;
+  for (const d of dates) {
+    if (typeof d !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  }
+  return new Set(dates).size === 3;
 }
 
 function dateStr(d) {
@@ -52,33 +47,12 @@ async function getCacheStatus() {
   }
 }
 
-function mettreAJourBanner(container) {
-  const cfg = getConfig();
-  const modeTest = estModeTest(cfg.DATES);
-  let banner = container.querySelector('.setup-banner');
-  if (modeTest) {
-    const currentRange = formatRange(cfg.DATES);
-    const realRange = formatRange(DATES_RELLES);
-    if (!banner) {
-      banner = document.createElement('div');
-      banner.className = 'setup-banner';
-      container.insertBefore(banner, container.firstChild);
-    }
-    banner.innerHTML =
-      '<svg class="setup-banner-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
-      '<div class="setup-banner-text">' +
-        '<div class="setup-banner-line1">Mode test \u2014 dates simul\u00e9es</div>' +
-        '<div class="setup-banner-line2">' + currentRange + ' au lieu du ' + realRange + '</div>' +
-      '</div>';
-  } else if (banner) {
-    banner.remove();
-  }
-}
-
-function appliquerDates(container) {
+function appliquerDates(container, store) {
   const dates = lireDates(container);
   mergeConfig({ DATES: dates });
-  mettreAJourBanner(container);
+  if (datesValides(dates) && store && typeof store.setReglages === 'function') {
+    store.setReglages({ DATES: dates });
+  }
 }
 
 function appliquerCreneaux(container) {
@@ -100,32 +74,20 @@ async function imprimerPlanche() {
 export function screenSetup(container, opts = {}) {
   const { onClearAll } = opts;
   const cfg = getConfig();
-  const modeTest = estModeTest(cfg.DATES);
-  const currentRange = formatRange(cfg.DATES);
-  const realRange = formatRange(DATES_RELLES);
+  const store = opts.store;
 
-  const bannerHtml = modeTest
-    ? '<div class="setup-banner">' +
-        '<svg class="setup-banner-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
-        '<div class="setup-banner-text">' +
-          '<div class="setup-banner-line1">Mode test \u2014 dates simul\u00e9es</div>' +
-          '<div class="setup-banner-line2">' + currentRange + ' au lieu du ' + realRange + '</div>' +
-        '</div>' +
-      '</div>'
-    : '';
-
-  const dateFields = cfg.DATES.map((d, i) =>
-    '<label>Date ' + (i + 1) + ' <input type="date" class="setup-date" data-idx="' + i + '" value="' + d + '"></label>'
-  ).join('');
+  const dateFields = ['', '', ''].map((_, i) => {
+    const val = cfg.DATES[i] || '';
+    return '<label>Date ' + (i + 1) + ' <input type="date" class="setup-date" data-idx="' + i + '" value="' + val + '"></label>';
+  }).join('');
 
   container.innerHTML =
     '<div id="screen-setup">' +
-      bannerHtml +
       '<section class="setup-card">' +
         '<h3 class="setup-card-title">Dates de session</h3>' +
         '<div class="setup-dates">' + dateFields + '</div>' +
         '<div class="setup-card-actions">' +
-          '<button id="setup-reset-dates" class="setup-btn setup-btn--primary">R\u00e9tablir les dates r\u00e9elles</button>' +
+          '<button id="setup-reset-dates" class="setup-btn setup-btn--outline">Vider les dates</button>' +
           '<button id="setup-today-plus-2" class="setup-btn setup-btn--outline">Dates = aujourd\u2019hui + 2 jours</button>' +
         '</div>' +
       '</section>' +
@@ -174,7 +136,7 @@ export function screenSetup(container, opts = {}) {
 
   container.addEventListener('change', (e) => {
     if (e.target.classList.contains('setup-date')) {
-      appliquerDates(container);
+      appliquerDates(container, opts.store);
     }
     if (e.target.id === 'setup-h-debut' || e.target.id === 'setup-h-bascule' || e.target.id === 'setup-h-fin') {
       appliquerCreneaux(container);
@@ -199,14 +161,14 @@ export function screenSetup(container, opts = {}) {
       const dates = aujourdHuiPlus2();
       const inputs = container.querySelectorAll('.setup-date');
       inputs.forEach((inp, i) => { inp.value = dates[i]; });
-      appliquerDates(container);
+      appliquerDates(container, opts.store);
       return;
     }
 
     if (btn.id === 'setup-reset-dates') {
       const inputs = container.querySelectorAll('.setup-date');
-      inputs.forEach((inp, i) => { inp.value = DATES_RELLES[i]; });
-      appliquerDates(container);
+      inputs.forEach(inp => { inp.value = ''; });
+      appliquerDates(container, opts.store);
       return;
     }
 
@@ -264,7 +226,6 @@ export function screenSetup(container, opts = {}) {
       if (hf) hf.value = cfg.H_FIN_MIDI;
       const seuil = container.querySelector('#setup-seuil-absence');
       if (seuil) seuil.value = cfg.SEUIL_ABSENCE_MIN;
-      mettreAJourBanner(container);
     },
   };
 }

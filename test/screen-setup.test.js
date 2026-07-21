@@ -1,6 +1,6 @@
 import { test, assert, assertEq } from './harness.js';
 import { screenSetup } from '../js/ui/screen-setup.js';
-import { DEFAULTS, getConfig, hydrateConfig } from '../js/config.js';
+import { DEFAULTS, getConfig, hydrateConfig, mergeConfig } from '../js/config.js';
 
 function div() {
   return document.createElement('div');
@@ -16,42 +16,40 @@ test('P2 — le rendu contient les sections attendues', () => {
   const d = div();
   screenSetup(d);
   assert(d.querySelector('#screen-setup') !== null, '#screen-setup');
-  assert(d.querySelector('#screen-setup h2') !== null, 'titre');
+  assert(d.querySelector('.setup-card-title') !== null, 'titre');
   assert(d.querySelector('#setup-today-plus-2') !== null, 'bouton +2 jours');
-  assert(d.querySelector('#setup-reset-dates') !== null, 'bouton reset');
+  assert(d.querySelector('#setup-reset-dates') !== null, 'bouton vider');
   assert(d.querySelector('#setup-clear-all') !== null, 'bouton effacer');
   assert(d.querySelector('#setup-confirm-input') !== null, 'champ confirmation');
 });
 
 /* ── P3 — 3 champs date ── */
-test('P3 — 3 inputs type=date avec les valeurs DEFAULTS', () => {
+test('P3 — 3 inputs type=date avec les valeurs courantes', () => {
   const d = div();
   screenSetup(d);
   const inputs = d.querySelectorAll('.setup-date');
   assertEq(inputs.length, 3, '3 dates');
-  const cfg = getConfig();
   inputs.forEach((inp, i) => {
     assertEq(inp.type, 'date');
-    assertEq(inp.value, cfg.DATES[i], `date ${i} = ${cfg.DATES[i]}`);
   });
 });
 
-/* ── P4 — Pas de bandeau avec DATES par défaut ── */
-test('P4 — pas de bandeau quand DATES = réelles', () => {
+/* ── P4 — Pas de bandeau (supprimé) ── */
+test('P4 — aucun bandeau présent dans l\'écran', () => {
   hydrateConfig({});
   const d = div();
   screenSetup(d);
   assert(d.querySelector('.setup-banner') === null, 'pas de bandeau');
 });
 
-/* ── P5 — Bandeau rouge avec DATES modifiées ── */
-test('P5 — bandeau rouge quand DATES modifiées', () => {
-  hydrateConfig({ DATES: ['2026-07-20', '2026-07-21', '2026-07-22'] });
+/* ── P5 — Bouton "Dates = aujourd\'hui + 2 jours" présent ── */
+test('P5 — bouton aujourd\'hui + 2 jours présent', () => {
+  hydrateConfig({});
   const d = div();
   screenSetup(d);
-  const banner = d.querySelector('.setup-banner.warning');
-  assert(banner !== null, 'bandeau présent');
-  assert(banner.textContent.includes('MODE TEST'), 'texte MODE TEST');
+  const btn = d.querySelector('#setup-today-plus-2');
+  assert(btn !== null, 'bouton +2 jours présent');
+  assertEq(btn.textContent.trim(), 'Dates = aujourd\u2019hui + 2 jours');
 });
 
 /* ── P6 — Bouton effacer désactivé par défaut ── */

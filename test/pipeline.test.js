@@ -3,6 +3,11 @@ import { Scan } from '../js/scan/pipeline.js';
 import { decode } from '../js/scan/decode.js';
 import { initDB } from '../js/db/store.js';
 import { precalcChecksums, idDe, payload } from '../js/model/ident.js';
+import { mergeConfig } from '../js/config.js';
+
+test('pipeline-setup-dates', () => {
+  mergeConfig({ DATES: ['2026-08-04', '2026-08-05', '2026-08-06'] });
+});
 
 function dbName() { return 'bim-test-' + Date.now() + '-' + Math.random(); }
 

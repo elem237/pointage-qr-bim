@@ -2,8 +2,12 @@ import { test, assert, assertEq } from './harness.js';
 import { screenReport } from '../js/ui/screen-report.js';
 import { PARTICIPANTS } from '../js/data.js';
 import { idDe } from '../js/model/ident.js';
-import { getConfig } from '../js/config.js';
+import { getConfig, mergeConfig } from '../js/config.js';
 import { tousLesSlots } from '../js/model/slots.js';
+
+test('report-render-setup-dates', () => {
+  mergeConfig({ DATES: ['2026-08-04', '2026-08-05', '2026-08-06'] });
+});
 
 const cfg = getConfig();
 const TZ = cfg.TZ_OFFSET_MIN * 60 * 1000;

@@ -298,9 +298,50 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 **Suppression :** `rapport-avant.pdf` (PDF du .docx source, pas de l'app — a faussé l'audit).
 
 **Nouvelles dettes assumées :**
-- `DEFAULTS.DATES` utilisé directement dans `screen-setup.js` — usage légitime (valeur de repli avant override).
 - `LABEL_CRENEAU` non exporté depuis `data.js` — nécessaire mais pas bloquant.
 - `test/pwa.test.js:112` référence encore `bim-v1` — obsolète depuis `bim-v7`.
+
+---
+
+## Généralisation des dates — 2026-07-21
+
+**Contexte** : la formation est reportée à date inconnue. Les dates `4-6 août 2026`
+n'ont plus de sens. L'organisateur saisit lui-même 3 dates quelconques dans
+l'écran Réglages.
+
+### Changements
+
+| Fichier | Modification |
+|---|---|
+| `js/config.js:10` | `DEFAULTS.DATES = []` (plus de dates par défaut) |
+| `js/db/store.js:264–269` | `setReglages(partial)` — persiste n'importe quel réglage dans `meta.reglages` |
+| `js/db/store.js:165–170` | `initDB()` restaure `meta.reglages` via `hydrateConfig()` au boot |
+| `js/main.js:20–31` | `autoModeTest()` ne génère plus de dates. Si DATES vide → ne fait rien ; si aujourd'hui pas dans DATES → étend les créneaux (`00:00–23:59`) pour les tests |
+| `js/main.js:83` | `autoModeTest()` déplacé APRÈS `initDB()` pour que les dates persistées soient déjà restaurées |
+| `js/main.js:114–118` | Si `DATES.length === 0` au lancement → ouvre l'écran Réglages au lieu du Scan |
+| `js/ui/screen-setup.js:5–11` | `datesValides(dates)` remplace `estModeTest()` / `DATES_RELLES`. Valide : 3 dates distinctes en `YYYY-MM-DD` |
+| `js/ui/screen-setup.js` | Bandeau rouge supprimé (le concept de « mode test » n'existe plus). Le seul garde-fou est la redirection vers Réglages au boot si DATES vide |
+| `js/ui/screen-setup.js:71–78` | `appliquerDates()` persiste via `store.setReglages({ DATES })` en IndexedDB, pas seulement en mémoire |
+| `js/ui/screen-setup.js:124` | Bouton « Rétablir les dates réelles » → « Vider les dates » (remet les 3 champs à vide) |
+| `test/*.test.js` | Ajout de `mergeConfig({ DATES: [...] })` dans les fichiers qui dépendent de dates spécifiques — aucun test supprimé, tous passent |
+
+### Testé (Node, modules purs)
+
+- `config.test.js` — 7/7 ✅
+- `slots.test.js` — 23/23 ✅ (avec 2026-08-04…06 via mergeConfig)
+- `report.test.js` — 27/27 ✅
+
+### Testé manuellement (logique arbitraires)
+
+Avec `mergeConfig({ DATES: ['2026-09-15', '2026-09-16', '2026-09-17'] })` :
+- `tousLesSlots()` → 6 slots corrects (15/Mt, 15/Md, 16/Mt, 16/Md, 17/Mt, 17/Md)
+- `slotDe(2026-09-15 08:30 Douala)` → `{ date: '2026-09-15', creneau: 'matin' }`
+- `finDe()` / `slotsEchus()` / `etatCellule()` → résultats corrects
+- DATES non contiguës acceptées (validation distinctes seulement)
+
+### Nouvelle dette
+
+- `screen-setup.js` nécessite `opts.store` pour persister les dates. Si `store.setReglages` est absent (test sans store), la persistance est silencieusement ignorée — les dates restent en mémoire seulement.
 
 ---
 ## Prochaine étape

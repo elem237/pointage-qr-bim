@@ -1,6 +1,6 @@
 import { PARTICIPANTS } from '../data.js';
 import { idDe } from '../model/ident.js';
-import { getConfig, mergeConfig } from '../config.js';
+import { getConfig, mergeConfig, hydrateConfig } from '../config.js';
 
 const DB_NAME = 'bim-pointage';
 const DB_VERSION = 3;
@@ -162,8 +162,12 @@ export async function initDB(dbName) {
   const db = await openDB(dbName);
   const pointages = await loadPointages(db);
   const deviceId = await getOrCreateDeviceId(db);
+  const reglagesStockes = await getMeta(db, 'reglages');
+  if (reglagesStockes !== undefined) hydrateConfig(reglagesStockes);
   const seuilStocke = await getMeta(db, 'seuilAbsenceMin');
-  if (seuilStocke !== undefined) mergeConfig({ SEUIL_ABSENCE_MIN: seuilStocke });
+  if (seuilStocke !== undefined && (reglagesStockes === undefined || reglagesStockes.SEUIL_ABSENCE_MIN === undefined)) {
+    mergeConfig({ SEUIL_ABSENCE_MIN: seuilStocke });
+  }
 
   return {
     _dbName: dbName,
@@ -255,6 +259,13 @@ export async function initDB(dbName) {
     async setSeuilAbsence(min) {
       await setMeta(db, 'seuilAbsenceMin', min);
       mergeConfig({ SEUIL_ABSENCE_MIN: min });
+    },
+
+    async setReglages(partial) {
+      const current = (await getMeta(db, 'reglages')) || {};
+      const merged = { ...current, ...partial };
+      await setMeta(db, 'reglages', merged);
+      mergeConfig(partial);
     },
 
     close() {

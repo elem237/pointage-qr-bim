@@ -19,16 +19,11 @@ function dateStr(d) {
 
 function autoModeTest() {
   const cfg = getConfig();
+  if (cfg.DATES.length === 0) return;
   const t = new Date();
   const ts = dateStr(t);
   if (cfg.DATES.includes(ts)) return;
-  const dates = [
-    ts,
-    dateStr(new Date(t.getTime() + 864e5)),
-    dateStr(new Date(t.getTime() + 2 * 864e5)),
-  ];
   mergeConfig({
-    DATES: dates,
     H_DEBUT_MATIN: '00:00',
     H_BASCULE:     '12:00',
     H_FIN_MIDI:    '23:59',
@@ -79,13 +74,13 @@ function montrerScreen(nom) {
 
 async function main() {
   hydrateConfig({});
-  autoModeTest();
   await precalcChecksums();
   try {
     _store = await initDB();
   } catch (e) {
     console.warn('IndexedDB indisponible:', e);
   }
+  autoModeTest();
   const app = document.getElementById('app');
   if (!app) return;
   app.innerHTML = `
@@ -116,7 +111,11 @@ async function main() {
       montrerScreen(btn.dataset.screen);
     }
   });
-  montrerScreen('scan');
+  if (getConfig().DATES.length === 0) {
+    montrerScreen('setup');
+  } else {
+    montrerScreen('scan');
+  }
 }
 
 main();

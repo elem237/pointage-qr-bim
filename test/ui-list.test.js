@@ -1,10 +1,14 @@
 import { test, assert, assertEq } from './harness.js';
 import { screenList, filtrerParticipants, resetFilter } from '../js/ui/screen-list.js';
-import { DEFAULTS, hydrateConfig } from '../js/config.js';
+import { hydrateConfig, mergeConfig } from '../js/config.js';
 import { PARTICIPANTS } from '../js/data.js';
 import { tousLesSlots } from '../js/model/slots.js';
 import { idDe } from '../js/model/ident.js';
 import { cle } from '../js/model/slots.js';
+
+test('ui-list-setup-dates', () => {
+  mergeConfig({ DATES: ['2026-08-04', '2026-08-05', '2026-08-06'] });
+});
 
 function div() {
   return document.createElement('div');

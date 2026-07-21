@@ -1,5 +1,10 @@
 import { test, assert, assertEq } from './harness.js';
 import { slotDe, slotAvecOverride, tousLesSlots } from '../js/model/slots.js';
+import { mergeConfig } from '../js/config.js';
+
+test('slot-setup-dates', () => {
+  mergeConfig({ DATES: ['2026-08-04', '2026-08-05', '2026-08-06'] });
+});
 
 const D = (y, m, d, h, min) => Date.UTC(y, m, d, h, min);
 

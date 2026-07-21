@@ -1,7 +1,11 @@
 import { test, assert, assertEq } from './harness.js';
 import { etatCellule, finDe, slotsEchus, presents, taux, theta } from '../js/model/report.js';
 import { idDe } from '../js/model/ident.js';
-import { getConfig } from '../js/config.js';
+import { getConfig, mergeConfig } from '../js/config.js';
+
+test('report-setup-dates', () => {
+  mergeConfig({ DATES: ['2026-08-04', '2026-08-05', '2026-08-06'] });
+});
 
 // ─── helpers ─────────────────────────────────────────────
 
