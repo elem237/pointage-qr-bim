@@ -344,6 +344,31 @@ Avec `mergeConfig({ DATES: ['2026-09-15', '2026-09-16', '2026-09-17'] })` :
 - `screen-setup.js` nécessite `opts.store` pour persister les dates. Si `store.setReglages` est absent (test sans store), la persistance est silencieusement ignorée — les dates restent en mémoire seulement.
 
 ---
+
+## Correctif hors-ligne — 2026-07-21 (régression post bim-v6)
+
+**Symptôme rapporté** : sur iPhone/Safari, l'app **installée** (icône écran d'accueil) refuse de démarrer sans réseau — alors que le protocole CORRECTIF.md §3 avait été validé intégralement sur iPhone X le 2026-07-17 (`bim-v6`).
+
+**Diagnostic refait à partir du code réel et du site live** (pas des verdicts précédents, cf. `MEMORY` sur ce piège) : rejeu du protocole en Chromium (Playwright, profil propre) sur le code local à jour (`bim-v8`) → **succès intégral**, 30/30 fichiers en cache, zéro requête échouée, 4 écrans OK hors-ligne. Donc **le code applicatif n'est pas en cause**. Comparaison ensuite du dépôt (`origin/master`, HEAD = `cf2bd64`) avec `https://pointage-qr-bim.netlify.app/` en production (`curl`) :
+
+- `git diff HEAD origin/master -- sw.js` → vide (le commit `cf2bd64` avec `bim-v8` est bien poussé)
+- Mais le `sw.js` **servi en ligne** répondait encore `CACHE = 'bim-v7'`, **sans `./js/model/absences.js`** dans `ASSETS` (fichier ajouté en `bim-v8`, AB-4), alors que `js/main.js` et une partie du reste du site servaient déjà le code de `cf2bd64`. Preuve d'un **déploiement figé/partiellement périmé au niveau du CDN**, pas d'un défaut de code.
+- Cause trouvée dans `netlify.toml` : le bloc `[[headers]] for = "/sw.js"` (avec `Cache-Control: no-cache`) était déclaré **avant** le bloc générique `[[headers]] for = "*.js"` (avec `Cache-Control: public, max-age=86400`). Netlify applique les règles qui matchent un même chemin par **ordre de déclaration, la dernière l'emportant** pour une même clé d'en-tête — confirmé empiriquement : `curl -sI .../sw.js` renvoyait bien `cache-control: public,max-age=86400` en ligne, alors que la règle `/sw.js` explicite demandait `no-cache`.
+- **Conséquence exacte du bug** : `sw.js` — le seul fichier qui DOIT toujours être resservi frais pour que le mécanisme de mise à jour de SW fonctionne — pouvait rester caché jusqu'à 24 h côté CDN/navigateur après chaque déploiement. Un téléphone resté sur un `sw.js` ancien (précache sans `absences.js`, requis statiquement par `screen-report.js` depuis AB-4) voit tout le graphe de modules ES échouer à se résoudre une fois hors-ligne → l'app ne démarre jamais sans réseau. Correspond exactement au symptôme rapporté.
+
+**Correctif** : dans `netlify.toml`, le bloc `[[headers]] for = "/sw.js"` déplacé **après** les blocs génériques `*.js` / `*.css` / `*.png`, pour que sa règle `no-cache` soit la dernière à matcher `/sw.js` et l'emporte. Aucun autre fichier touché — `sw.js` reste à `bim-v8` (déjà correct localement, il ne pouvait simplement pas être vu par les téléphones).
+
+- **Fichier modifié** : `netlify.toml` (réordonnancement uniquement, pas de valeur changée)
+- **Testé** : rejeu de `test/deploy.test.js` (D1–D6, D8 ✅) + `test/pwa.test.js` (F1/F3, §11 iOS ✅) via Playwright sur une page de test isolée — D7 et D9 échouent mais **préexistant, sans rapport** (D7 attend un format `ASSETS` obsolète avec une entrée `'./'` littérale qui n'existe plus depuis les étapes suivantes ; D9 résout `fetch(m.start_url)` relativement à la page de test dans `/test/`, pas au manifest — même piège que celui déjà documenté et corrigé pour les icônes dans `pwa.test.js`, non encore appliqué à D9)
+- **Protocole CORRECTIF.md §3** : rejoué intégralement en Chromium (Playwright, profil propre, dates configurées, mode avion) sur le code local `bim-v8` → ✅. **Pas encore re-testé sur iPhone physique après déploiement du correctif `netlify.toml`** — à faire dès que le déploiement Netlify est effectif (voir Mesures physiques)
+- **Non touché** : `/index.html` garde `Cache-Control: public, max-age=86400` — risque du même ordre mais plus faible (le contenu servi hors-ligne dépend du précache SW, pas de l'HTTP cache, une fois le SW actif) ; laissé tel quel, hors du périmètre du bug confirmé. À surveiller si un symptôme similaire réapparaît malgré ce correctif.
+
+### Nouvelle dette
+
+- Re-valider le protocole CORRECTIF.md §3 sur iPhone physique après ce déploiement, pour confirmer que le correctif `netlify.toml` résout bien le symptôme en conditions réelles (pas seulement en Chromium).
+- `test/deploy.test.js` D7 et D9 : tests obsolètes/fragiles, à corriger dans une session dédiée aux tests (hors périmètre de ce correctif).
+
+---
 ## Prochaine étape
 
-Aucune — toutes les étapes du projet sont terminées. Prochaine action : déploiement de `bim-v8` et recette finale avec le client.
+Re-tester le protocole hors-ligne CORRECTIF.md §3 sur iPhone physique après le déploiement du correctif `netlify.toml` de ce jour. Recette finale avec le client une fois confirmé.

@@ -12,12 +12,6 @@
     Cache-Control = "public, max-age=86400"
 
 [[headers]]
-  for = "/sw.js"
-  [headers.values]
-    Cache-Control = "no-cache"
-    Service-Worker-Allowed = "/"
-
-[[headers]]
   for = "*.js"
   [headers.values]
     Cache-Control = "public, max-age=86400"
@@ -31,6 +25,12 @@
   for = "*.png"
   [headers.values]
     Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+    Service-Worker-Allowed = "/"
 
 [[headers]]
   for = "/*"
