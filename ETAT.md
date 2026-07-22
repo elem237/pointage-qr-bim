@@ -203,7 +203,7 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 | iPhone · ding AudioContext | Audible mais state = 'suspended' | DETTE : `await ctx.resume()` dans `initAudio()` |
 | Badges QR · impression + scan physique | Les 16 badges scannés et lus correctement. QR version 1-Q lisible sur papier, ~30 cm, éclairage néons. | ✅ FORMAT CONFIRMÉ — tous les badges validés |
 | Rapport PDF · impression réelle (largeurs) | — | ⚠️ EN ATTENTE avant le jour J |
-| iPhone X · mode avion, protocole CORRECTIF.md §3 intégral (install icône → tuer app → relancer avion → Scan/Liste/Rapport) | Tous les points du protocole passés | ✅ HORS-LIGNE VALIDÉ (C1) |
+| iPhone X · mode avion, protocole CORRECTIF.md §3 intégral (install icône → tuer app → relancer avion → Scan/Liste/Rapport) | Tous les points du protocole passés — revalidé 2026-07-22 après correctif `netlify.toml` sur `effulgent-sprite-fbf8eb.netlify.app` | ✅ HORS-LIGNE VALIDÉ (C1) |
 | Android Redmi · installation PWA (icône écran d'accueil) | Play Store présent, menu ⋮ ne propose ni « Installer » ni « Ajouter à l'écran d'accueil », même après rechargement + attente + interaction | ⚠️ NON RÉSOLU — probable non-certification Play Protect de l'appareil (fréquent sur unités reflashées/importées). Le manifest, les icônes et le SW sont conformes et vérifiés en ligne (curl) : ce n'est pas un défaut de notre code. Repli : raccourci simple sans mode standalone. Ne pas rouvrir sans nouvel appareil Android à tester. |
 
 ---
@@ -372,13 +372,15 @@ Avec `mergeConfig({ DATES: ['2026-09-15', '2026-09-16', '2026-09-17'] })` :
 - `CACHE = 'bim-v8'`, 30/30 entrées dans `caches.open('bim-v8')` ✅
 - Protocole hors-ligne (mode avion réel via `context.setOffline(true)`, reload, navigation Scan/Liste/Rapport/Réglages) → **zéro requête échouée, zéro erreur console, les 4 écrans s'affichent** ✅
 
+**Protocole CORRECTIF.md §3 validé sur iPhone physique** — 2026-07-22 : confirmé par l'utilisateur, ça fonctionne hors-ligne sur `https://effulgent-sprite-fbf8eb.netlify.app/`. ✅ **HORS-LIGNE VALIDÉ (C1)**, régression du 2026-07-21 résolue.
+
 ### Nouvelle dette
 
-- Re-valider le protocole CORRECTIF.md §3 sur **iPhone physique** — la vérification ci-dessus est automatisée (Playwright/Chromium), pas encore faite sur l'appareil réel. À faire avant de cocher la case définitivement (règle CLAUDE.md : « ne jamais cocher une case qui exige un appareil physique »).
 - Confirmer avec l'organisateur si le nouveau site `effulgent-sprite-fbf8eb.netlify.app` remplace définitivement `pointage-qr-bim.netlify.app` (lequel reste, lui, périmé à `bim-v7`) — s'assurer qu'aucun lien/QR/bookmark ne pointe encore vers l'ancien.
+- Ce site ne se déploie pas automatiquement sur push : penser à **déclencher ET publier manuellement** dans le dashboard Netlify après tout futur changement de code (sans quoi la prod reste figée sur un ancien build, comme le 2026-07-22).
 - `test/deploy.test.js` D7 et D9 : tests obsolètes/fragiles, à corriger dans une session dédiée aux tests (hors périmètre de ce correctif).
 
 ---
 ## Prochaine étape
 
-Re-tester le protocole hors-ligne CORRECTIF.md §3 sur iPhone physique (le correctif est vérifié en ligne mais pas encore sur appareil réel), à l'adresse `https://effulgent-sprite-fbf8eb.netlify.app/`. Recette finale avec le client une fois confirmé.
+Aucune sur le hors-ligne — validé de bout en bout (code, CDN, iPhone physique). Recette finale avec le client sur `https://effulgent-sprite-fbf8eb.netlify.app/`.
