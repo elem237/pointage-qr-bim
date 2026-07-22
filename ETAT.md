@@ -363,12 +363,22 @@ Avec `mergeConfig({ DATES: ['2026-09-15', '2026-09-16', '2026-09-17'] })` :
 - **Protocole CORRECTIF.md §3** : rejoué intégralement en Chromium (Playwright, profil propre, dates configurées, mode avion) sur le code local `bim-v8` → ✅. **Pas encore re-testé sur iPhone physique après déploiement du correctif `netlify.toml`** — à faire dès que le déploiement Netlify est effectif (voir Mesures physiques)
 - **Non touché** : `/index.html` garde `Cache-Control: public, max-age=86400` — risque du même ordre mais plus faible (le contenu servi hors-ligne dépend du précache SW, pas de l'HTTP cache, une fois le SW actif) ; laissé tel quel, hors du périmètre du bug confirmé. À surveiller si un symptôme similaire réapparaît malgré ce correctif.
 
+### Déploiement — 2026-07-22
+
+**Découverte en cours de vérification** : le site à jour n'est plus `pointage-qr-bim.netlify.app` mais `https://effulgent-sprite-fbf8eb.netlify.app/` — nouveau site Netlify, relié à GitHub mais **sans déploiement automatique sur push** : chaque déploiement doit être **déclenché puis publié manuellement** dans le dashboard Netlify (Deploys → Trigger deploy, puis « Publish deploy » sur le build voulu si non publié automatiquement). Ce point avait retardé la mise en ligne du correctif ci-dessus : le premier « Trigger deploy » avait bien reconstruit le bon commit, mais le déploiement de production servi restait l'ancien (CDN non basculé sur ce build). La publication manuelle explicite du déploiement le plus récent a résolu ce point.
+
+**Vérifié en ligne après publication** (`curl` + Playwright sur `https://effulgent-sprite-fbf8eb.netlify.app/`) :
+- `sw.js` → `Cache-Control: no-cache` ✅ (n'est plus recouvert par la règle `*.js`)
+- `CACHE = 'bim-v8'`, 30/30 entrées dans `caches.open('bim-v8')` ✅
+- Protocole hors-ligne (mode avion réel via `context.setOffline(true)`, reload, navigation Scan/Liste/Rapport/Réglages) → **zéro requête échouée, zéro erreur console, les 4 écrans s'affichent** ✅
+
 ### Nouvelle dette
 
-- Re-valider le protocole CORRECTIF.md §3 sur iPhone physique après ce déploiement, pour confirmer que le correctif `netlify.toml` résout bien le symptôme en conditions réelles (pas seulement en Chromium).
+- Re-valider le protocole CORRECTIF.md §3 sur **iPhone physique** — la vérification ci-dessus est automatisée (Playwright/Chromium), pas encore faite sur l'appareil réel. À faire avant de cocher la case définitivement (règle CLAUDE.md : « ne jamais cocher une case qui exige un appareil physique »).
+- Confirmer avec l'organisateur si le nouveau site `effulgent-sprite-fbf8eb.netlify.app` remplace définitivement `pointage-qr-bim.netlify.app` (lequel reste, lui, périmé à `bim-v7`) — s'assurer qu'aucun lien/QR/bookmark ne pointe encore vers l'ancien.
 - `test/deploy.test.js` D7 et D9 : tests obsolètes/fragiles, à corriger dans une session dédiée aux tests (hors périmètre de ce correctif).
 
 ---
 ## Prochaine étape
 
-Re-tester le protocole hors-ligne CORRECTIF.md §3 sur iPhone physique après le déploiement du correctif `netlify.toml` de ce jour. Recette finale avec le client une fois confirmé.
+Re-tester le protocole hors-ligne CORRECTIF.md §3 sur iPhone physique (le correctif est vérifié en ligne mais pas encore sur appareil réel), à l'adresse `https://effulgent-sprite-fbf8eb.netlify.app/`. Recette finale avec le client une fois confirmé.
