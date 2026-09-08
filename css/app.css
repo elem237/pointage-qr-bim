@@ -756,6 +756,34 @@ tr.p  { height: 8.78mm; }
   border-radius: 2px;
 }
 
+/* ── Responsive multi-appareils : Android / iPhone / tablette / ordinateur ── */
+
+/* Barre d'URL mobile : 100dvh quand disponible, 100vh en repli */
+#screen-container { height: calc(100dvh - 44px); }
+
+/* Réticule proportionnel : 150 px sur téléphone, réduit sur petits
+   écrans paysage, agrandi sur tablette (décoratif uniquement) */
+#scan-reticle {
+  width: min(150px, 44vmin);
+  height: min(150px, 44vmin);
+}
+
+/* Cible tactile 44 px (INTERFACE.md §3.5) : l'opérateur a une main prise */
+.sel-btn { min-height: 44px; padding: 8px 16px; }
+
+/* Écrans courts (téléphone en paysage) : compacter le panneau retour
+   pour laisser de la place à la caméra */
+@media screen and (max-height: 500px) {
+  #scan-result { height: 110px; }
+  .result-name { font-size: 20px; }
+}
+
+/* Tablettes et ordinateurs : colonne centrée, caméra respirante */
+@media screen and (min-width: 700px) {
+  #screen-container { max-width: 720px; margin: 0 auto; }
+  #scan-result { height: 170px; }
+}
+
 } /* fin @media screen */
 
 /* Cache les éléments d'écran à l'impression — ne touche PAS print.css */

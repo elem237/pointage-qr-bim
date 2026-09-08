@@ -416,6 +416,31 @@ Avec `mergeConfig({ DATES: ['2026-09-15', '2026-09-16', '2026-09-17'] })` :
 
 ---
 
+## Perf scan Android + responsive — 2026-09-08
+
+**Symptôme rapporté** : sur Android, le scan ralentit progressivement puis l'image devient noire, caméra inaccessible.
+
+**Causes identifiées dans le code** :
+1. `lancerBoucle` lançait `onFrame` (décodage async coûteux) à 10 Hz **sans attendre** la fin du précédent → décodages chevauchés, CPU saturé, ralentissement croissant puis gel.
+2. `new BarcodeDetector()` créé **à chaque trame** + `canvas.width/height` réassignés **à chaque trame** (réallocation + reset contexte 2D).
+3. Aucune surveillance du flux (`track 'ended'` après révocation OS / arrière-plan) et aucune pause en arrière-plan → vidéo noire muette, caméra gardée ouverte (batterie).
+
+### Changements
+
+| Fichier | Modification |
+|---|---|
+| `js/scan/decode.js` | `BarcodeDetector` singleton réutilisé (+ `_resetDetector()` test-only) |
+| `js/scan/camera.js` | `sansChevauchement()` (garde, 10 Hz max sans chevauchement) câblée dans `lancerBoucle` ; `captureROI` ne redimensionne que si besoin ; `onStreamEnded()` exporté |
+| `js/ui/screen-scan.js` | pause en arrière-plan (`visibilitychange` → `suspendre`, reprise au retour) ; interruption involontaire → message « Caméra interrompue — touchez ici pour relancer » (jamais de noir muet) |
+| `css/app.css` (**écran uniquement**, `print.css` intact) | `100dvh`, réticule `min(150px, 44vmin)`, `.sel-btn` 44 px (INTERFACE §3.5), mode compact paysage court, colonne 720 px centrée ≥ 700 px |
+| `test/scan.test.js` | 5 tests Node (garde sync/async/rejet/exception, singleton 1 construction) |
+
+**Vérifié** : Node 167/177 (10 échecs = pré-existants navigateur-only : `ImageData`, `indexedDB`) ; syntaxe OK ; `print.css` intact au diff.
+
+**Dette / à tester sur appareils** : reprise après arrière-plan prolongé sur Android (l'OS peut exiger un nouveau `getUserMedia` — le code le refait via `demarrerScan`) ; mesure d'autonomie ; iPhone/tablette/desktop en conditions réelles.
+
+---
+
 ## Prochaine étape
 
 Aucune sur le hors-ligne — validé de bout en bout (code, CDN, iPhone physique). Recette finale avec le client sur `https://effulgent-sprite-fbf8eb.netlify.app/`.

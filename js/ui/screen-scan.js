@@ -2,7 +2,7 @@
  * U2 — Écran Scan (INTERFACE.md §5)
  * 4 bandes verticales : Navigation (U1) / Compteur / Caméra / Retour
  */
-import { startCamera, stopCamera, lancerBoucle } from '../scan/camera.js';
+import { startCamera, stopCamera, lancerBoucle, onStreamEnded } from '../scan/camera.js';
 import { Scan } from '../scan/pipeline.js';
 import { decode } from '../scan/decode.js';
 import { feedback, initAudio } from '../feedback.js';
@@ -219,12 +219,48 @@ export async function screenScan(container, store) {
   let stream = null;
   let controller = null;
   let _derniereT = 0;
+  let visEcoute = false;
+  let ouvert = true;
 
-  async function arreterScan() {
+  async function suspendre() {
+    // Pause sans toucher au panneau : libère la caméra (batterie,
+    // révocation OS en arrière-plan) en gardant l'UI en place.
     if (controller) { controller.stop(); controller = null; }
     if (stream) { stopCamera(stream); stream = null; }
+  }
+
+  async function arreterScan() {
+    ouvert = false;
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', onVisibilite);
+    }
+    visEcoute = false;
+    await suspendre();
     panel.style.background = 'var(--surf-1)';
     inner.innerHTML = 'Présentez un badge';
+  }
+
+  function onVisibilite() {
+    if (typeof document === 'undefined') return;
+    if (document.hidden) {
+      suspendre();
+    } else if (!stream && ouvert) {
+  if (typeof document !== 'undefined' && !visEcoute) {
+    visEcoute = true;
+    document.addEventListener('visibilitychange', onVisibilite);
+  }
+  demarrerScan();
+    }
+  }
+
+  function cameraInterrompue() {
+    // Le flux s'est terminé sans arrêt volontaire (OS, surchauffe,
+    // révocation) : l'expliquer au lieu d'une vidéo noire muette.
+    stream = null;
+    if (controller) { controller.stop(); controller = null; }
+    panel.style.background = 'var(--danger)';
+    inner.textContent = 'Caméra interrompue — touchez ici pour relancer';
+    panel.addEventListener('click', () => demarrerScan(), { once: true });
   }
 
   async function demarrerScan() {
@@ -235,6 +271,10 @@ export async function screenScan(container, store) {
 
     try {
       stream = await startCamera(video);
+      // Interruption involontaire (track 'ended') → message + relance,
+      // jamais de vidéo noire muette. L'arrêt volontaire (suspendre /
+      // arreterScan) met stream à null AVANT : le rappel est ignoré.
+      onStreamEnded(stream, () => { if (stream !== null) cameraInterrompue(); });
       _derniereT = Date.now();
       updateCounter(container, store, _derniereT, 'auto');
       inner.innerHTML = 'Présentez un badge';

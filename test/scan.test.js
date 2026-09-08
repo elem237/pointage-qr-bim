@@ -1,7 +1,7 @@
 import { test, assert, assertEq } from './harness.js';
 import { retenir } from '../js/scan/debounce.js';
-import { decode } from '../js/scan/decode.js';
-import { startCamera, stopCamera, captureROI, lancerBoucle } from '../js/scan/camera.js';
+import { decode, _resetDetector } from '../js/scan/decode.js';
+import { startCamera, stopCamera, captureROI, lancerBoucle, sansChevauchement, onStreamEnded } from '../js/scan/camera.js';
 
 test('C4 — retenir : première occurrence → vrai', () => {
   const H = new Map();
@@ -63,4 +63,69 @@ test('C1 — camera exporte les fonctions attendues', () => {
   assert(typeof stopCamera === 'function');
   assert(typeof captureROI === 'function');
   assert(typeof lancerBoucle === 'function');
+  assert(typeof sansChevauchement === 'function');
+  assert(typeof onStreamEnded === 'function');
+});
+
+/* ── Anti-chevauchement (lenteur Android) ── */
+
+test('Garde — onFrame synchrone : toutes les trames acceptées', () => {
+  let n = 0;
+  const garde = sansChevauchement(() => { n++; });
+  assertEq(garde(null), true);
+  assertEq(garde(null), true);
+  assertEq(garde(null), true);
+  assertEq(n, 3);
+});
+
+test('Garde — onFrame async : 2e trame sautée tant que la 1re tourne', async () => {
+  let n = 0;
+  let liberer;
+  const enCours = new Promise(res => { liberer = res; });
+  const garde = sansChevauchement(() => { n++; return enCours; });
+  assertEq(garde(null), true, '1re acceptée');
+  assertEq(garde(null), false, '2e sautée (décodage en cours)');
+  assertEq(garde(null), false, '3e sautée');
+  assertEq(n, 1, 'onFrame appelé 1 seule fois');
+  liberer();
+  await enCours;
+  await Promise.resolve();
+  assertEq(garde(null), true, 'acceptée après fin du décodage');
+  assertEq(n, 2);
+});
+
+test('Garde — un rejet libère la garde (pas de blocage définitif)', async () => {
+  const garde = sansChevauchement(() => Promise.reject(new Error('boom')));
+  assertEq(garde(null), true);
+  await Promise.resolve();
+  await new Promise(res => setTimeout(res, 0));
+  assertEq(garde(null), true, 'garde libérée après rejet');
+});
+
+test('Garde — une exception synchrone ne bloque pas la boucle', () => {
+  const garde = sansChevauchement(() => { throw new Error('sync'); });
+  assertEq(garde(null), true);
+  assertEq(garde(null), true);
+});
+
+/* ── Détecteur singleton (fuite mémoire Android) ── */
+
+test('C2 — BarcodeDetector construit 1 seule fois pour N décodages', async () => {
+  let constructions = 0;
+  globalThis.BarcodeDetector = class {
+    constructor() { constructions++; }
+    async detect() { return []; }
+  };
+  try {
+    _resetDetector();
+    // ImageData n'existe pas en Node : objet minimal (decode ne lit que data/width/height).
+    const img = { data: new Uint8ClampedArray(16), width: 2, height: 2 };
+    assertEq(await decode(img), null);
+    assertEq(await decode(img), null);
+    assertEq(await decode(img), null);
+    assertEq(constructions, 1, '1 seul BarcodeDetector');
+  } finally {
+    delete globalThis.BarcodeDetector;
+    _resetDetector();
+  }
 });
