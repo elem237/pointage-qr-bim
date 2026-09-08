@@ -1,4 +1,4 @@
-const CACHE = 'bim-v11';
+const CACHE = 'bim-v12';
 
 const ASSETS = [
   './index.html',
@@ -35,7 +35,15 @@ const ASSETS = [
 
 self.addEventListener('install', event => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  // `{ cache: 'reload' }` : contourne le cache HTTP du navigateur. Sans ça,
+  // les assets servis avec `max-age=86400` peuvent être précachés PÉRIMÉS
+  // (vieux bytes sous le nouveau nom de cache) — mise à jour fantôme,
+  // constatée sur Android. addAll reste atomique (tout-ou-rien).
+  event.waitUntil(
+    caches.open(CACHE).then(c =>
+      c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))
+    )
+  );
 });
 
 self.addEventListener('activate', event => {
