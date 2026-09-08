@@ -29,17 +29,23 @@ export function stopCamera(stream) {
  * Le canvas n'est redimensionné que si la taille change : réassigner
  * width/height à chaque trame réalloue le buffer et réinitialise
  * le contexte 2D (coût CPU + à-coups sur Android).
+ * La ROI décodée est plafonnée à 240 px de côté : un QR version 1
+ * (21×21 modules) se décode dès ~4 px/module, et diviser les pixels
+ * par ~2–4 divise le coût jsQR d'autant. La RÉGION (carré central
+ * × ROI_RATIO) est inchangée — seule la résolution de décodage baisse.
  * @param {HTMLVideoElement} video
  * @param {HTMLCanvasElement} canvas
  * @returns {ImageData}
  */
+export const ROI_DECODE_MAX = 240;
+
 export function captureROI(video, canvas) {
   const cfg = getConfig();
   const w = video.videoWidth;
   const h = video.videoHeight;
   const size = Math.min(w, h) * cfg.ROI_RATIO;
-  const cw = Math.ceil(size);
-  const ch = Math.ceil(size);
+  const cw = Math.min(Math.ceil(size), ROI_DECODE_MAX);
+  const ch = Math.min(Math.ceil(size), ROI_DECODE_MAX);
   if (canvas.width !== cw || canvas.height !== ch) {
     canvas.width = cw;
     canvas.height = ch;
@@ -124,8 +130,13 @@ export function lancerBoucle(video, canvas, onFrame) {
     }
     if (time - lastTime >= interval) {
       lastTime = time;
-      const roi = captureROI(video, canvas);
-      garde(roi);
+      // Capture + décodage DANS la garde : quand l'appareil rame, on saute
+      // aussi le getImageData (synchrone, coûteux : synchro GPU→CPU) au lieu
+      // de le payer à chaque tick pour un décodage qui serait ignoré.
+      garde(() => {
+        const roi = captureROI(video, canvas);
+        return onFrame(roi);
+      });
     }
     requestAnimationFrame(loop);
   }

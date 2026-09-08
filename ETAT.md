@@ -439,6 +439,17 @@ Avec `mergeConfig({ DATES: ['2026-09-15', '2026-09-16', '2026-09-17'] })` :
 
 **Dette / à tester sur appareils** : reprise après arrière-plan prolongé sur Android (l'OS peut exiger un nouveau `getUserMedia` — le code le refait via `demarrerScan`) ; mesure d'autonomie ; iPhone/tablette/desktop en conditions réelles.
 
+### Fluidité persistante (v10+) — 2026-09-08
+
+**Constat** : malgré la garde, scan toujours saccadé sur Android. Cause restante : `captureROI` + `getImageData` (synchrone, synchro GPU→CPU) tournaient à chaque tick même quand le décodage était occupé, et la résolution de décodage n'était pas plafonnée (jusqu'à 360×360 sur capteur 720p).
+
+| Fichier | Modification |
+|---|---|
+| `js/scan/camera.js` | capture + décodage DANS la garde (le `getImageData` est sauté quand ça rame → adaptation automatique) ; `ROI_DECODE_MAX = 240` (région ROI inchangée, seuls les pixels de décodage baissent — un QR v1 se lit dès ~4 px/module) |
+| `test/scan.test.js` | 3 tests Node via mocks (plafond 240, petite vidéo intacte, zéro redimensionnement inutile) |
+
+**Vérifié** : Node 170/180 (10 échecs = mêmes pré-existants navigateur-only).
+
 ---
 
 ## Prochaine étape

@@ -67,6 +67,53 @@ test('C1 — camera exporte les fonctions attendues', () => {
   assert(typeof onStreamEnded === 'function');
 });
 
+function fauxCanvas() {
+  const appels = { draw: 0, get: [] };
+  return {
+    appels,
+    width: 0,
+    height: 0,
+    getContext: () => ({
+      drawImage: () => { appels.draw++; },
+      getImageData: (x, y, w, h) => { appels.get.push([w, h]); return { width: w, height: h }; },
+    }),
+  };
+}
+
+/* ── ROI plafonnée (fluidité Android) : testable sans DOM via mocks ── */
+
+test('ROI — grande vidéo 1280×720 : décodage plafonné à 240 px', async () => {
+  const { captureROI, ROI_DECODE_MAX } = await import('../js/scan/camera.js');
+  const canvas = fauxCanvas();
+  captureROI({ videoWidth: 1280, videoHeight: 720 }, canvas);
+  assertEq(canvas.width, ROI_DECODE_MAX);
+  assertEq(canvas.height, ROI_DECODE_MAX);
+  assertEq(canvas.appels.get[0][0], ROI_DECODE_MAX);
+});
+
+test('ROI — petite vidéo 320×240 : taille réelle conservée (120 px)', async () => {
+  const { captureROI } = await import('../js/scan/camera.js');
+  const canvas = fauxCanvas();
+  captureROI({ videoWidth: 320, videoHeight: 240 }, canvas);
+  assertEq(canvas.width, 120);
+  assertEq(canvas.height, 120);
+});
+
+test('ROI — pas de redimensionnement si taille identique', async () => {
+  const { captureROI } = await import('../js/scan/camera.js');
+  const canvas = fauxCanvas();
+  const video = { videoWidth: 640, videoHeight: 480 };
+  captureROI(video, canvas);
+  const w1 = canvas.width;
+  let resizes = 0;
+  Object.defineProperty(canvas, 'width', {
+    get() { return w1; },
+    set() { resizes++; },
+  });
+  captureROI(video, canvas);
+  assertEq(resizes, 0, 'aucune réassignation');
+});
+
 /* ── Anti-chevauchement (lenteur Android) ── */
 
 test('Garde — onFrame synchrone : toutes les trames acceptées', () => {
