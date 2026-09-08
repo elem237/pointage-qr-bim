@@ -17,24 +17,7 @@ function douala(y, m, d, h, min) {
   return Date.UTC(y, m, d, h, min) - TZ;
 }
 
-const P = [
-  { numero: 1,  nomComplet: "YEBGA Jacques Albert" },
-  { numero: 2,  nomComplet: "ANYOUZO'A Marc Thyrille" },
-  { numero: 3,  nomComplet: "NGOUDJO Fabrice Patrick" },
-  { numero: 4,  nomComplet: "AKOLEO Lionel" },
-  { numero: 5,  nomComplet: "ENAM NDONGO Benjamin Davy" },
-  { numero: 6,  nomComplet: "BELLA Thierry Martial" },
-  { numero: 7,  nomComplet: "LOMIE MPELLE Kenny Borel" },
-  { numero: 8,  nomComplet: "BUINDA Theophilus YUKBANWI" },
-  { numero: 9,  nomComplet: "MVA Cherel Christian" },
-  { numero: 10, nomComplet: "NDJOMO Christian St\u00e9phane" },
-  { numero: 11, nomComplet: "KOMOL MONGO Joseph" },
-  { numero: 12, nomComplet: "BAYOKOLAK Guy Robert" },
-  { numero: 13, nomComplet: "NTOLO Daniel Olivier" },
-  { numero: 14, nomComplet: "MBIDA EYENGA Rollin" },
-  { numero: 15, nomComplet: "ELANG BEYEME Wilfried" },
-  { numero: 16, nomComplet: "MBIAHEU St\u00e9phanie Merveille" },
-];
+import { PARTICIPANTS as P } from '../js/data.js';
 
 const J1_MATIN = { date: '2026-08-04', creneau: 'matin' };
 const J1_MIDI  = { date: '2026-08-04', creneau: 'midi' };
@@ -190,12 +173,12 @@ test('E2.10 — presents ignore les annul\u00e9s', () => {
   assertEq(presents(m, J1_MATIN), 1);
 });
 
-test('E2.11 — presents = 16 avec tous pr\u00e9sents', () => {
+test('E2.11 — presents = 13 avec tous pr\u00e9sents', () => {
   const m = new Map();
   for (const p of P) {
     m.set(cle(p, J1_MATIN), pv(0, 'actif', 1000 + p.numero, 'scan', 'd1', 'auto'));
   }
-  assertEq(presents(m, J1_MATIN), 16);
+  assertEq(presents(m, J1_MATIN), 13);
 });
 
 // ─── taux ────────────────────────────────────────────────
@@ -210,12 +193,12 @@ test('E2.13 — taux = 1 quand tous pr\u00e9sents', () => {
   assertEq(taux(m, J1_MATIN), 1);
 });
 
-test('E2.14 — taux = 0.5 pour 8/16', () => {
+test('E2.14 — taux = 5/13 pour 5 pr\u00e9sents', () => {
   const m = new Map();
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 5; i++) {
     m.set(cle(P[i], J1_MATIN), pv(0, 'actif', 1000, 'scan', 'd1', 'auto'));
   }
-  assertEq(taux(m, J1_MATIN), 0.5);
+  assertEq(taux(m, J1_MATIN), 5 / 13);
 });
 
 // ─── theta ───────────────────────────────────────────────
@@ -242,7 +225,7 @@ test('E2.17 — theta = 0.5 avec 50% sur 2 slots \u00e9chus', () => {
 test('E2.18 — theta calcule la moyenne sur tous les slots \u00e9chus', () => {
   const m = new Map();
   for (const p of P) m.set(cle(p, J1_MATIN), pv(0, 'actif', 1000, 'scan', 'd1', 'auto'));
-  for (let i = 0; i < 8; i++) m.set(cle(P[i], J1_MIDI), pv(0, 'actif', 2000, 'scan', 'd1', 'auto'));
+  for (let i = 0; i < 6; i++) m.set(cle(P[i], J1_MIDI), pv(0, 'actif', 2000, 'scan', 'd1', 'auto'));
   const t = theta(m, douala(2026, 7, 4, 19, 0));
-  assertEq(t, 0.75);
+  assertEq(t, 19 / 26);
 });

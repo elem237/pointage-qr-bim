@@ -1,11 +1,11 @@
 import { PARTICIPANTS } from '../js/data.js';
 import { test, assert, assertEq } from './harness.js';
 
-test('16 entr\u00e9es exactement', () => {
-  assertEq(PARTICIPANTS.length, 16);
+test('13 entr\u00e9es exactement (liste client r\u00e9vis\u00e9e : 14, 15, 16 supprim\u00e9s)', () => {
+  assertEq(PARTICIPANTS.length, 13);
 });
 
-test('numeros 1..16, uniques, dans l\'ordre', () => {
+test('numeros 1..13, uniques, dans l\'ordre', () => {
   for (let i = 0; i < PARTICIPANTS.length; i++) {
     assertEq(PARTICIPANTS[i].numero, i + 1, `position ${i} should have numero ${i + 1}`);
   }
@@ -25,9 +25,13 @@ test('aucun nomComplet vide apr\u00e8s norm', () => {
   });
 });
 
-test('St\u00e9phane et St\u00e9phanie portent des accents', () => {
+test('St\u00e9phane porte un accent (numero 10)', () => {
   const s1 = PARTICIPANTS.find(p => p.numero === 10).nomComplet;
-  const s2 = PARTICIPANTS.find(p => p.numero === 16).nomComplet;
   assert(s1.includes('\u00e9'), 'St\u00e9phane should have accent');
-  assert(s2.includes('\u00e9'), 'St\u00e9phanie should have accent');
+});
+
+test('numeros 14, 15, 16 supprim\u00e9s (liste r\u00e9vis\u00e9e)', () => {
+  for (const n of [14, 15, 16]) {
+    assertEq(PARTICIPANTS.find(p => p.numero === n), undefined, `numero ${n} absent`);
+  }
 });

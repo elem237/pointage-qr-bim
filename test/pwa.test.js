@@ -109,7 +109,12 @@ test('PWA F1: enregistrement du service worker', async () => {
 });
 
 test('PWA F1: précache contient les assets critiques', async () => {
-  const cache = await caches.open('bim-v1');
+  // Le nom du cache suit la version du SW (bim-v9…) : retrouver le cache bim-* courant
+  // plutôt qu'une version codée en dur.
+  const names = await caches.keys();
+  const bim = names.find(n => n.startsWith('bim-'));
+  assert(bim !== undefined, 'aucun cache bim-* trouvé');
+  const cache = await caches.open(bim);
   const keys = await cache.keys();
   const urls = keys.map(r => r.url);
   assert(urls.some(u => u.endsWith('index.html')),

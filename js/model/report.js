@@ -86,7 +86,7 @@ export function presents(m, slot) {
  * @returns {number}
  */
 export function taux(m, slot) {
-  return presents(m, slot) / 16;
+  return presents(m, slot) / PARTICIPANTS.length;
 }
 
 /**
@@ -100,5 +100,5 @@ export function theta(m, tNow) {
   if (echus.length === 0) return null;
   let total = 0;
   for (const s of echus) total += presents(m, s);
-  return total / (16 * echus.length);
+  return total / (PARTICIPANTS.length * echus.length);
 }

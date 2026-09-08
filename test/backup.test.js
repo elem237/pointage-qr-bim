@@ -93,9 +93,9 @@ test('G9 — serialiser préserve les participants', () => {
   const m = new Map();
   const json = serialiser(PARTICIPANTS, m);
   const data = deserialiser(json);
-  assertEq(data.participants.length, 16);
+  assertEq(data.participants.length, PARTICIPANTS.length);
   assertEq(data.participants[0].nomComplet, PARTICIPANTS[0].nomComplet);
-  assertEq(data.participants[15].numero, 16);
+  assertEq(data.participants[data.participants.length - 1].numero, PARTICIPANTS[PARTICIPANTS.length - 1].numero);
 });
 
 /* ── G10 — deserialiser préserve exportLe (SPEC §6.5) ── */

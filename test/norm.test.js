@@ -4,7 +4,7 @@ import { test, assert, assertEq } from './harness.js';
 
 const NOMS = PARTICIPANTS.map(p => p.nomComplet);
 
-test('Prop 3.1 — idempotence sur les 16 noms', () => {
+test('Prop 3.1 — idempotence sur les 13 noms', () => {
   for (const v of NOMS) {
     assertEq(norm(norm(v)), norm(v), `idempotence failed for "${v}"`);
   }

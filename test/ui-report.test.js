@@ -107,10 +107,10 @@ test('U3.7 — la page A4 est dans le preview-container', () => {
   assert(footer !== null, 'footer band');
 });
 
-/* ── U3.8 — 16 participants dans le tableau ── */
-test('U3.8 — 16 participants dans le tableau A4', () => {
+/* ── U3.8 — 13 participants dans le tableau ── */
+test('U3.8 — 13 participants dans le tableau A4', () => {
   const div = document.createElement('div');
   screenReport(div, new Map(), douala(2026, 7, 4, 18, 0));
   const persos = div.querySelectorAll('td.perso');
-  assertEq(persos.length, 16, '16 perso');
+  assertEq(persos.length, PARTICIPANTS.length, `${PARTICIPANTS.length} perso`);
 });

@@ -32,7 +32,7 @@ régénéré. `crypto.randomUUID()` si présent, sinon fallback
 
 ### P4 — Ordre des gardes de `valider` (§A4)
 Nouvel ordre : format → inconnu → checksum. `checksum` n'est plus appelée hors
-des 16 ids :
+des 13 ids :
 ```
 valider(w):
     si ¬REGEX.test(w)        retourner 'format'
@@ -65,7 +65,7 @@ aucun conflit.
 
 Lis cette section avant d'écrire une ligne.
 
-1. **Pas de framework, pas de bundler, pas de `npm install`.** Vanilla JS en modules ES, servi statiquement. Toute dépendance est vendorée dans `vendor/`. Motif : l'app doit fonctionner hors-ligne depuis un cache de service worker ; chaque outil de build ajoute un mode de défaillance sans rien apporter à 16 participants.
+1. **Pas de framework, pas de bundler, pas de `npm install`.** Vanilla JS en modules ES, servi statiquement. Toute dépendance est vendorée dans `vendor/`. Motif : l'app doit fonctionner hors-ligne depuis un cache de service worker ; chaque outil de build ajoute un mode de défaillance sans rien apporter à 13 participants.
 2. **Aucun CDN au runtime.** Viole l'Invariant 9.2. Un `<script src="https://...">` casse l'app en salle, sans réseau.
 3. **Aucun `localStorage`** pour les données de pointage : IndexedDB uniquement (transactions atomiques). `localStorage` est réservé aux préférences UI non critiques.
 4. **Écris les tests d'abord** pour les modules marqués 🔴. Leur échec est silencieux en salle et irrécupérable après coup.
@@ -100,7 +100,7 @@ Lis cette section avant d'écrire une ligne.
 ├── js/
 │   ├── main.js              # routeur d'écrans, câblage
 │   ├── config.js            # §3 — toutes les constantes
-│   ├── data.js              # §4.1 — les 16 participants
+│   ├── data.js              # §4.1 — les 13 participants
 │   ├── model/
 │   │   ├── norm.js          # A1
 │   │   ├── ident.js         # A2, A3, A4 (payload)
@@ -188,9 +188,11 @@ export function getConfig() {
 
 ## 4. Données
 
-### 4.1 Les 16 participants — `js/data.js`
+### 4.1 Les 13 participants — `js/data.js`
 
 **Verbatim du document source. Ne pas corriger l'orthographe, ne pas réordonner, ne pas séparer nom et prénom.** L'ordre `numero` est la clé de tri du rapport officiel.
+
+> **Liste révisée (client, .docx du 2026-09-08).** Les n° 14, 15, 16 (MBIDA EYENGA Rollin, ELANG BEYEME Wilfried, MBIAHEU Stéphanie Merveille) ont été supprimés du document source. `EFFECTIFS = 13`, `|K| = 13 × 6 = 78`. Les anciens badges `BIM26-014/015/016` retournent désormais `'inconnu'` (§A4).
 
 ```js
 export const PARTICIPANTS = [
@@ -207,20 +209,17 @@ export const PARTICIPANTS = [
   { numero: 11, nomComplet: "KOMOL MONGO Joseph" },
   { numero: 12, nomComplet: "BAYOKOLAK Guy Robert" },
   { numero: 13, nomComplet: "NTOLO Daniel Olivier" },
-  { numero: 14, nomComplet: "MBIDA EYENGA Rollin" },
-  { numero: 15, nomComplet: "ELANG BEYEME Wilfried" },
-  { numero: 16, nomComplet: "MBIAHEU Stéphanie Merveille" },
 ];
 ```
 
-⚠️ `ANYOUZO'A` contient une **apostrophe typographique U+2019** (`’`), pas une apostrophe droite. Copier tel quel. `Stéphane`, `Stéphanie` portent des accents.
+⚠️ `ANYOUZO'A` contient une **apostrophe typographique U+2019** (`’`), pas une apostrophe droite. Copier tel quel. `Stéphane` porte un accent.
 
 ### 4.2 Types
 
 ```js
 /**
  * @typedef {Object} Participant
- * @property {number} numero        1..16, clé de tri du rapport
+ * @property {number} numero        1..13, clé de tri du rapport
  * @property {string} nomComplet    verbatim, casse préservée
  */
 
@@ -249,7 +248,7 @@ Base `bim-pointage`, version 2.
 
 | Store | keyPath | Index | Contenu |
 |---|---|---|---|
-| `participants` | `numero` | `nomNormalise` | les 16 |
+| `participants` | `numero` | `nomNormalise` | les 13 |
 | `pointages` | `cle` | — | `Cle → PointageValue` |
 | `meta` | `k` | — | `device`, `schemaVersion`, `reglages` |
 
@@ -288,7 +287,7 @@ export function norm(x) {
 - `toLocaleLowerCase()` est interdit : sur un téléphone en locale turque, `I` → `ı`, ce qui casse la recherche.
 
 **Tests**
-- Idempotence : `norm(norm(ν)) === norm(ν)` sur les 16 noms
+- Idempotence : `norm(norm(ν)) === norm(ν)` sur les 13 noms
 - `norm("stephane") ⊑ norm("NDJOMO Christian Stéphane")` → vrai
 - `norm("  A   B  ") === "a b"`
 
@@ -299,13 +298,13 @@ Contrat : number → string
 idDe(n) = "BIM26-" + String(n).padStart(3, '0')
 ```
 
-**Test** : injective — `new Set(PARTICIPANTS.map(p => idDe(p.numero))).size === 16`
+**Test** : injective — `new Set(PARTICIPANTS.map(p => idDe(p.numero))).size === 13`
 
 ### A3 — `checksum(id)` — 🔴
 
 ```
 Contrat : Cle_id → string (2 caractères Base32)
-Domaine : L(^BIM26-[0-9]{3}$)  ← PAS seulement les 16 ids réels (Erratum, §3.3)
+Domaine : L(^BIM26-[0-9]{3}$)  ← PAS seulement les 13 ids réels (Erratum, §3.3)
 ```
 
 ```
@@ -315,9 +314,9 @@ checksum(id):
     retourner base32_2(n)                  // alphabet "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 ```
 
-**Cas limite critique** : `checksum` doit fonctionner sur `"BIM26-999"` (id de forme valide, inexistant). Si elle lève une exception hors des 16 ids, `valider()` casse sur un badge inconnu. **C'était l'erreur E2 de la v1.**
+**Cas limite critique** : `checksum` doit fonctionner sur `"BIM26-999"` (id de forme valide, inexistant). Si elle lève une exception hors des 13 ids, `valider()` casse sur un badge inconnu. **C'était l'erreur E2 de la v1.**
 
-`crypto.subtle` est **asynchrone** : `checksum` retourne une Promise. Pré-calculer les 16 checksums au démarrage dans une Map pour que le chemin de scan reste synchrone.
+`crypto.subtle` est **asynchrone** : `checksum` retourne une Promise. Pré-calculer les 13 checksums au démarrage dans une Map pour que le chemin de scan reste synchrone.
 
 **Tests** : `checksum("BIM26-999")` ne lève pas ; taux de détection ≥ 99,9 % (10⁴ payloads aléatoires de forme valide → < 20 acceptés).
 
@@ -340,12 +339,12 @@ valider(w):
     si CHECKSUMS.get(id) ≠ k       retourner 'checksum'
     retourner 'ok'
 
-**Ordre des gardes (PATCH v1.1 §P4)** : format → inconnu → checksum. `checksum` n'est jamais appelée hors des 16 ids ; `valider` reste 100 % synchrone. Les chaînes `BIM26-999-*` (autre lot) comme `BIM26-999-ZZ` (garbage) donnent `'inconnu'` — l'action de l'opérateur est la même. Le domaine de `checksum` reste `L(^BIM26-[0-9]{3}$)` par sécurité défensive.
+**Ordre des gardes (PATCH v1.1 §P4)** : format → inconnu → checksum. `checksum` n'est jamais appelée hors des 13 ids ; `valider` reste 100 % synchrone. Les chaînes `BIM26-999-*` (autre lot) comme `BIM26-999-ZZ` (garbage) donnent `'inconnu'` — l'action de l'opérateur est la même. Le domaine de `checksum` reste `L(^BIM26-[0-9]{3}$)` par sécurité défensive.
 
 ### A5 — Planche de badges — `js/badges.js`
 
 ```
-pages = ceil(16 / 8) = 2
+pages = ceil(13 / 8) = 2 (8 + 5)
 pos(n) = { page: floor((n-1)/8)+1, index: ((n-1) % 8)+1 }
 ```
 
@@ -570,7 +569,7 @@ etatCellule(p, s, tNow):
 ```
 
 **Trois états, pas deux.** ⚠️ **Propriété 8.2 — la garde porte sur `finDe(s)` (FIN du créneau), pas sur le début.**
-- Sans ça, un rapport imprimé le soir du J1 affiche **64 absences fictives** (J2 et J3).
+- Sans ça, un rapport imprimé le soir du J1 affiche **52 absences fictives** (J2 et J3).
 - Avec `debutDe(s)`, un rapport imprimé à 10h déclarerait absents les participants du **matin encore en cours**.
 
 Un pointage `annule` → la garde 1 échoue → `absent` ou `vide`. **Le tombstone est transparent au rapport** : il vit dans le treillis, jamais sur le papier.
@@ -582,11 +581,11 @@ Un pointage `annule` → la garde 1 échoue → `absent` ou `vide`. **Le tombsto
 ```
 slotsEchus(tNow) = { s ∈ S : tNow ≥ finDe(s) }
 presents(s) = |{ p : etatCellule(p,s).type = 'present' }|
-taux(s) = presents(s) / 16
-Θ = (slotsEchus ≠ ∅) ? Σ presents(s) / (16 × |slotsEchus|) : INDÉFINI
+taux(s) = presents(s) / 13
+Θ = (slotsEchus ≠ ∅) ? Σ presents(s) / (13 × |slotsEchus|) : INDÉFINI
 ```
 
-> **`Θ` indéfini, pas 0**, avant le premier créneau échu. Diviser par `16 × 6` au lieu de `16 × |slotsEchus|` afficherait **33 %** au lieu de 100 % pour une assiduité parfaite au soir du J1.
+> **`Θ` indéfini, pas 0**, avant le premier créneau échu. Diviser par `13 × 6` au lieu de `13 × |slotsEchus|` afficherait **33 %** au lieu de 100 % pour une assiduité parfaite au soir du J1.
 
 ### E3 — Tris
 
@@ -703,7 +702,7 @@ Chaque étape est testable seule. Ne pas passer à la suivante avant que ses tes
 | 9 | Écran Scan | UI + sélecteur Auto/Matin/Midi | bout en bout |
 | 10 | 🔴 `report.js` | etatCellule, stats | **0 absence future**, tombstone transparent |
 | 11 | Écran Rapport + `@media print` | PDF | **mesurer les largeurs**, imprimer |
-| 12 | `badges.js` | planche A4 | 16 QR en version 1-Q, imprimer et scanner |
+| 12 | `badges.js` | planche A4 | 13 QR en version 1-Q, imprimer et scanner |
 | 13 | Écrans Liste + Réglages | D1–D4, import/export | recherche, fusion |
 | 14 | 🔴 `sw.js`, `manifest` | PWA | **mode avion → app fonctionnelle** |
 | 15 | Déploiement + install | Netlify/GH Pages | install sur les téléphones réels |
@@ -719,7 +718,7 @@ Chaque étape est testable seule. Ne pas passer à la suivante avant que ses tes
 ## 13. Définition du « terminé »
 
 - [ ] Mode avion, après installation → scan, pointage, rapport fonctionnels
-- [ ] Les 16 badges imprimés se scannent sur Android **et** iPhone
+- [ ] Les 13 badges imprimés se scannent sur Android **et** iPhone
 - [ ] Le ding se déclenche sur iPhone (piège de l'`AudioContext`)
 - [ ] Rescanner le même badge → « déjà pointé à HH:MM », aucun doublon
 - [ ] QR étranger → son grave + « code non reconnu »

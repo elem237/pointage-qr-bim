@@ -5,12 +5,12 @@ import { PARTICIPANTS } from '../js/data.js';
 
 // ─── pos() ───────────────────────────────────────────────
 
-test('pos — injective sur 16 participants', () => {
+test('pos — injective sur 13 participants', () => {
   const clés = new Set(PARTICIPANTS.map(p => {
     const { page, index } = pos(p.numero);
     return `${page}-${index}`;
   }));
-  assertEq(clés.size, 16);
+  assertEq(clés.size, 13);
 });
 
 test('pos — 2 pages exactement', () => {
@@ -20,11 +20,11 @@ test('pos — 2 pages exactement', () => {
   assert(pages.has(2));
 });
 
-test('pos — 8 badges page 1, 8 badges page 2', () => {
+test('pos — 8 badges page 1, 5 badges page 2 (13 participants)', () => {
   const p1 = PARTICIPANTS.filter(p => pos(p.numero).page === 1);
   const p2 = PARTICIPANTS.filter(p => pos(p.numero).page === 2);
   assertEq(p1.length, 8);
-  assertEq(p2.length, 8);
+  assertEq(p2.length, 5);
 });
 
 test('pos(1) → {page:1, index:1}', () => {
@@ -45,23 +45,23 @@ test('pos(9) → {page:2, index:1}', () => {
   assertEq(p.index, 1);
 });
 
-test('pos(16) → {page:2, index:8}', () => {
-  const p = pos(16);
+test('pos(13) → {page:2, index:5} (dernier de la liste r\u00e9vis\u00e9e)', () => {
+  const p = pos(13);
   assertEq(p.page, 2);
-  assertEq(p.index, 8);
+  assertEq(p.index, 5);
 });
 
 // ─── genererBadges() ─────────────────────────────────────
 
-test('16 badges générés', async () => {
+test('13 badges générés', async () => {
   const badges = await genererBadges();
-  assertEq(badges.length, 16);
+  assertEq(badges.length, 13);
 });
 
-test('0 doublon — 16 payloads distincts', async () => {
+test('0 doublon — 13 payloads distincts', async () => {
   const badges = await genererBadges();
   const payloads = new Set(badges.map(b => b.payload));
-  assertEq(payloads.size, 16);
+  assertEq(payloads.size, 13);
 });
 
 test('chaque payload passe valider() → "ok"', async () => {

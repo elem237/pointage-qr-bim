@@ -379,8 +379,43 @@ Avec `mergeConfig({ DATES: ['2026-09-15', '2026-09-16', '2026-09-17'] })` :
 - Confirmer avec l'organisateur si le nouveau site `effulgent-sprite-fbf8eb.netlify.app` remplace définitivement `pointage-qr-bim.netlify.app` (lequel reste, lui, périmé à `bim-v7`) — s'assurer qu'aucun lien/QR/bookmark ne pointe encore vers l'ancien.
 - Ce site ne se déploie pas automatiquement sur push : penser à **déclencher ET publier manuellement** dans le dashboard Netlify après tout futur changement de code (sans quoi la prod reste figée sur un ancien build, comme le 2026-07-22).
 - `test/deploy.test.js` D7 et D9 : tests obsolètes/fragiles, à corriger dans une session dédiée aux tests (hors périmètre de ce correctif).
+---
+
+## Liste révisée à 13 + correctifs d'audit — 2026-09-08
+
+**Contexte** : le client a modifié `LISTE DE PRÉSENCE.docx` — les 3 derniers noms (n° 14 MBIDA EYENGA Rollin, n° 15 ELANG BEYEME Wilfried, n° 16 MBIAHEU Stéphanie Merveille) sont supprimés. `EFFECTIFS = 13`. Nouvelle liste extraite du .docx et vérifiée verbatim (U+2019, accents).
+
+### Changements (N codé en dur → `PARTICIPANTS.length`)
+
+| Fichier | Modification |
+|---|---|
+| `js/data.js` | 13 entrées, n° 1–13 inchangés verbatim |
+| `js/model/report.js` 🔴 | `taux` et `theta` divisent par `PARTICIPANTS.length` (tests E2.11/E2.14/E2.18 mis à jour AVANT le code) |
+| `js/ui/screen-scan.js` | compteur `/ N` dynamique (×3) |
+| `js/ui/screen-list.js` | `Tous · N` dynamique (×2) |
+| `js/ui/screen-report.js` | `rowspan` dynamique + `escapeHtml()` sur phrase/motif du bloc absences (XSS, test AB4-R6) |
+| `js/ui/screen-setup.js` | export Réglages sérialise `PARTICIPANTS` (était `[]`) |
+| `js/main.js` | écran d'erreur si IndexedDB indisponible (`_store` null ne crashe plus) |
+| `sw.js` | cache-first STRICT (repli `fetch` supprimé, Invariant 9.2) + CACHE `bim-v8` → `bim-v9` |
+| `test/index.html` | `screen-list.test.js` + `screen-setup.test.js` câblés (étaient orphelins) |
+| `test/pwa.test.js` | F1 ouvre le cache `bim-*` courant (était `bim-v1` codé en dur) |
+| `test/screen-list.test.js` | réécrit sur le DOM réel (pastilles, pas de tableau) + effectif N + `sté`/`steph` → 1 seul Stéphane |
+| `test/screen-report.test.js` | P3/P8/P10/P11 → 13 + P12/F2 → largeurs SKILL-IMPRESSION-V2 + AB4-R6 (XSS) |
+| `test/report.test.js` | `P` local remplacé par `import PARTICIPANTS` (source unique) |
+| `test/ident.test.js` | 13 ids + test `BIM26-014` → `'inconnu'` (badges supprimés) |
+| `test/badges.test.js` | 13 badges, pages 8+5, `pos(13)` → `{2,5}` |
+| `test/data/backup/norm/ui-scan/ui-report/report-render.test.js` | effectifs N-agnostiques |
+| `test-metrologie.html` | indices 11/12 (le [13] crashait) |
+| `SPECIFICATIONS.md` §4.1 + taux/Θ/badges/DoD | 16 → 13 (\|K\| = 78, 52 absences fictives). §10 périmé : non touché |
+| `SKILL.md` §4–7 | R3–R15, `rowspan="13"`, `1.`–`13.`, `13` (hauteurs 8.78 inchangées) |
+| `INTERFACE.md` | exemples `7/13`, `Tous · 13` |
+
+**Non touchés (décisions)** : `Badges électroniques/*.png` des 3 supprimés laissés sur disque (à supprimer à la main — ne pas réimprimer ces badges) ; triplication `formatTau` conservée (documentée) ; rewrite Netlify `/* → /index.html` conservé (requis pour `start_url`, risque 404 masqués assumé) ; `loadAllPointages` non atomique (risque faible, documenté) ; `confirm()` natifs conservés.
+
+**Dette** : suites DOM (`screen-report`, `screen-list`, `ui-*`, `report-render`) non exécutées ici (pas de navigateur dans l'environnement) — vérifiées par relecture, **à faire tourner sur `http://localhost:8000/test/index.html` avant déploiement**. Après déploiement : déclencher + publier manuellement sur Netlify (pas d'auto-deploy) et revalider le protocole §3 sur iPhone.
 
 ---
+
 ## Prochaine étape
 
 Aucune sur le hors-ligne — validé de bout en bout (code, CDN, iPhone physique). Recette finale avec le client sur `https://effulgent-sprite-fbf8eb.netlify.app/`.

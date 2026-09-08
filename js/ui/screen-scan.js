@@ -79,21 +79,21 @@ export function updateCounter(container, store, t, override) {
   const s = slotAvecOverride(t, override);
   if (!s) {
     left.textContent = 'Hors créneau';
-    right.innerHTML = '<strong>&mdash;</strong> / 16 pointés';
+    right.innerHTML = `<strong>&mdash;</strong> / ${PARTICIPANTS.length} pointés`;
     return;
   }
   const dates = getConfig().DATES;
   const idx = dates.indexOf(s.date);
   if (idx === -1) {
     left.textContent = 'Hors créneau';
-    right.innerHTML = '<strong>&mdash;</strong> / 16 pointés';
+    right.innerHTML = `<strong>&mdash;</strong> / ${PARTICIPANTS.length} pointés`;
     return;
   }
   const creneauLabel = s.creneau === 'matin' ? 'Matin' : 'Midi';
   left.textContent = `Jour ${idx + 1} · ${creneauLabel}`;
   const m = store.getPointages();
   const n = PARTICIPANTS.filter(p => etatCellule(m, p, s, t).type === 'present').length;
-  right.innerHTML = `<strong>${n}</strong> / 16 pointés`;
+  right.innerHTML = `<strong>${n}</strong> / ${PARTICIPANTS.length} pointés`;
 }
 
 /* ── Panneau de retour (bande 4) — 6 états ── */

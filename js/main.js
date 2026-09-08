@@ -40,6 +40,10 @@ function montrerScreen(nom) {
   const container = document.getElementById('screen-container');
   if (!container) return;
   container.innerHTML = '';
+  if (!_store) {
+    container.innerHTML = '<div class="fatal">Base locale indisponible (IndexedDB). Red\u00e9marrez l\u2019application.</div>';
+    return;
+  }
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.screen === nom));
 
   const m = _store ? _store.getPointages() : new Map();

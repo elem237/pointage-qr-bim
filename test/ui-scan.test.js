@@ -26,7 +26,7 @@ test('messagePourResultat est une fonction', () => {
 });
 
 /* ── Compteur — hors créneau ── */
-test('compteur affiche « — / 16 » quand slotAvecOverride retourne null', () => {
+test('compteur affiche « — / N » quand slotAvecOverride retourne null', () => {
   const div = document.createElement('div');
   div.innerHTML = '<div id="scan-counter"><span id="scan-counter-left"></span><span id="scan-counter-right"></span></div>';
 
@@ -61,7 +61,7 @@ test('compteur ne compte que les present du slot courant', () => {
 
   const right = div.querySelector('#scan-counter-right');
   assertEq(div.querySelector('#scan-counter-left').textContent, 'Jour 1 · Matin');
-  assertEq(right.textContent.replace(/\s+/g, ' ').trim(), '1 / 16 pointés');
+  assertEq(right.textContent.replace(/\s+/g, ' ').trim(), `1 / ${PARTICIPANTS.length} pointés`);
 });
 
 /* ── formatTau ── */

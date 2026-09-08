@@ -62,27 +62,27 @@ test('E2 — cellule vide est vide, pas "A"', () => {
   }
 });
 
-/* ── F1 — 16 participants dans l'ordre numero ── */
-test('F1 — 16 participants ordre numero croissant', () => {
+/* ── F1 — 13 participants dans l'ordre numero ── */
+test('F1 — 13 participants ordre numero croissant', () => {
   const div = document.createElement('div');
   screenReport(div, new Map(), douala(2026, 7, 4, 18, 0));
   const persos = div.querySelectorAll('td.perso');
-  assertEq(persos.length, 16);
-  for (let i = 0; i < 16; i++) {
+  assertEq(persos.length, PARTICIPANTS.length);
+  for (let i = 0; i < PARTICIPANTS.length; i++) {
     const text = persos[i].textContent.trim();
     assert(text.startsWith(`${i + 1}.`), `ligne ${i} commence par ${i+1}.`);
     assert(text.includes(PARTICIPANTS[i].nomComplet), `ligne ${i} contient le nom`);
   }
 });
 
-/* ── F2 — 10 <col> avec largeurs SKILL.md §3 ── */
-test('F2 — 10 <col> largeurs = SKILL.md §3', () => {
+/* ── F2 — 10 <col> avec largeurs SKILL-IMPRESSION-V2 §2 ── */
+test('F2 — 10 <col> largeurs = SKILL-IMPRESSION-V2 §2', () => {
   const div = document.createElement('div');
   screenReport(div, new Map(), douala(2026, 7, 4, 18, 0));
   const cols = div.querySelectorAll('colgroup col');
   assertEq(cols.length, 10);
-  const expected = ['26.84mm', '15.91mm', '49.02mm', '17.02mm',
-    '8.54mm', '8.54mm', '8.54mm', '8.54mm', '8.54mm', '8.54mm'];
+  const expected = ['24.61mm', '18.13mm', '51.19mm', '14.87mm',
+    '8.55mm', '8.59mm', '7.94mm', '9.00mm', '7.94mm', '9.21mm'];
   for (let i = 0; i < 10; i++) {
     assertEq(cols[i].style.width, expected[i], `col ${i} width = ${expected[i]}`);
   }

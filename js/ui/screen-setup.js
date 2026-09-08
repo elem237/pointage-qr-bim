@@ -1,4 +1,5 @@
 import { getConfig, mergeConfig } from '../config.js';
+import { PARTICIPANTS } from '../data.js';
 import { renderBadges } from '../badges.js';
 import { serialiser, exporterFichier, importerFichier, importerFusion } from '../db/backup.js';
 
@@ -180,7 +181,7 @@ export function screenSetup(container, opts = {}) {
     if (btn.id === 'setup-export') {
       const store = opts.store;
       if (!store) return;
-      const json = serialiser([], store.getPointages());
+      const json = serialiser(PARTICIPANTS, store.getPointages());
       exporterFichier(json);
       return;
     }

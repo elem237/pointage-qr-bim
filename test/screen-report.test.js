@@ -43,13 +43,13 @@ test('P2 — le rapport contient page, band, table, footer', () => {
   assert(div.querySelector('img.band.footer') !== null, 'footer band');
 });
 
-/* ── P3 — 16 lignes participant dans tbody ── */
-test('P3 — 16 lignes participant dans tbody (hors R0,R1,R2)', () => {
+/* ── P3 — 13 lignes participant dans tbody ── */
+test('P3 — 13 lignes participant dans tbody (hors R0,R1,R2)', () => {
   const div = document.createElement('div');
   screenReport(div, new Map(), douala(2026, 7, 4, 18, 0));
   const rows = div.querySelectorAll('table.presence tbody tr');
-  // R0 + R1 + R2 + 16 participants = 19 rows total
-  assertEq(rows.length, 19, '19 rows au total');
+  // R0 + R1 + R2 + 13 participants = 16 rows total
+  assertEq(rows.length, 16, '16 rows au total');
 });
 
 /* ── P4 — R0 : DIRECTION DES AFFAIRES GÉNÉRALE ── */
@@ -102,15 +102,16 @@ test('P7 — R2 : 4 verts + 6 en-têtes Mt/Md', () => {
   }
 });
 
-/* ── P8 — rowspan=16 sur THÈMES/LIEU/EFFECTIFS ── */
-test('P8 — rowspan=16 sur THÈMES LIEU EFFECTIFS', () => {
+/* ── P8 — rowspan=13 sur THÈMES/LIEU/EFFECTIFS ── */
+test('P8 — rowspan=13 sur THÈMES LIEU EFFECTIFS', () => {
   const div = document.createElement('div');
   screenReport(div, new Map(), douala(2026, 7, 4, 18, 0));
   const firstRow = div.querySelectorAll('table.presence tbody > tr')[3]; // first participant row
   const cells = firstRow.querySelectorAll('td');
-  assertEq(cells[0].getAttribute('rowspan'), '16', 'TH\u00c8MES');
-  assertEq(cells[1].getAttribute('rowspan'), '16', 'LIEU');
-  assertEq(cells[3].getAttribute('rowspan'), '16', 'EFFECTIFS');
+  const n = String(PARTICIPANTS.length);
+  assertEq(cells[0].getAttribute('rowspan'), n, 'TH\u00c8MES');
+  assertEq(cells[1].getAttribute('rowspan'), n, 'LIEU');
+  assertEq(cells[3].getAttribute('rowspan'), n, 'EFFECTIFS');
 });
 
 /* ── P9 — Noms formatés numero. nomComplet ── */
@@ -121,14 +122,14 @@ test('P9 — format "numero. nomComplet"', () => {
   assert(firstPerso.textContent.includes('1. YEBGA'));
 });
 
-/* ── P10 — 16 cellules perso ── */
-test('P10 — 16 cellules perso', () => {
+/* ── P10 — 13 cellules perso ── */
+test('P10 — 13 cellules perso', () => {
   const div = document.createElement('div');
   screenReport(div, new Map(), douala(2026, 7, 4, 18, 0));
   const persos = div.querySelectorAll('td.perso');
-  assertEq(persos.length, 16);
+  assertEq(persos.length, PARTICIPANTS.length);
   assertEq(persos[0].textContent.trim(), '1. YEBGA Jacques Albert');
-  assertEq(persos[15].textContent.trim(), '16. MBIAHEU St\u00e9phanie Merveille');
+  assertEq(persos[persos.length - 1].textContent.trim(), '13. NTOLO Daniel Olivier');
 });
 
 /* ── P11 — 6 cellules jour par participant ── */
@@ -136,19 +137,19 @@ test('P11 — 6 cellules jour par participant', () => {
   const div = document.createElement('div');
   screenReport(div, new Map(), douala(2026, 7, 4, 18, 0));
   const rows = div.querySelectorAll('table.presence tbody > tr');
-  for (let i = 3; i < 19; i++) {
+  for (let i = 3; i < 3 + PARTICIPANTS.length; i++) {
     const jours = rows[i].querySelectorAll('td.cell-jour');
     assertEq(jours.length, 6, `participant ${i-2} a 6 cellules`);
   }
 });
 
 /* ── P12 — 10 <col> avec les bonnes largeurs ── */
-test('P12 — 10 <col> avec largeurs SKILL.md §3', () => {
+test('P12 — 10 <col> avec largeurs SKILL-IMPRESSION-V2 §2', () => {
   const div = document.createElement('div');
   screenReport(div, new Map(), douala(2026, 7, 4, 18, 0));
   const cols = div.querySelectorAll('colgroup col');
   assertEq(cols.length, 10);
-  const expected = ['26.84mm','15.91mm','49.02mm','17.02mm','8.54mm','8.54mm','8.54mm','8.54mm','8.54mm','8.54mm'];
+  const expected = ['24.61mm','18.13mm','51.19mm','14.87mm','8.55mm','8.59mm','7.94mm','9.00mm','7.94mm','9.21mm'];
   for (let i = 0; i < 10; i++) {
     assertEq(cols[i].style.width, expected[i], `col ${i} width`);
   }
@@ -194,7 +195,7 @@ test('P16 — J2/J3 vides à tNow=J1 18h', () => {
   const div = document.createElement('div');
   screenReport(div, new Map(), douala(2026, 7, 4, 18, 0));
   const rows = div.querySelectorAll('table.presence tbody > tr');
-  for (let r = 3; r < 19; r++) {
+  for (let r = 3; r < 3 + PARTICIPANTS.length; r++) {
     const jours = rows[r].querySelectorAll('td.cell-jour');
     for (let j = 2; j < 6; j++) { // J2 starts at index 2, J3 at index 4
       assertEq(jours[j].innerHTML.trim(), '', `row ${r-2} col ${j} vide`);
@@ -285,4 +286,13 @@ test('AB4-R5 — deux absences triées par numero puis depart', () => {
   const idxN3 = html.indexOf('NGOUDJO');
   const idxN5 = html.indexOf('ENAM');
   assert(idxN3 < idxN5, 'ordre par numero');
+});
+
+test('AB4-R6 — motif HTML/injection \u00e9chapp\u00e9 (XSS)', () => {
+  const dep = douala(2026, 7, 4, 10, 15);
+  const ret = douala(2026, 7, 4, 11, 2);
+  const abs = [absVal(3, dep, ret, '<script>alert(1)</script>')];
+  const html = buildA4Html(new Map(), douala(2026, 7, 4, 18, 0), abs);
+  assert(!html.includes('<script>alert(1)</script>'), 'pas de script inject\u00e9');
+  assert(html.includes('&lt;script&gt;'), 'motif \u00e9chapp\u00e9');
 });

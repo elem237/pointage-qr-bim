@@ -20,7 +20,7 @@ En cas de conflit avec `SKILL.md` : **`SKILL.md` gagne toujours** (voir §2).
 > **Cette refonte ne touche QUE la présentation.**
 > Aucun fichier de `js/model/`, `js/db/`, `js/scan/` ne doit être modifié. Pas d'une ligne.
 
-Si un écran a besoin d'une donnée qui n'existe pas encore (ex. le compteur `7/16`), elle se **dérive** de ce que le modèle expose déjà. Elle ne se calcule pas dans l'UI et ne s'ajoute pas au modèle.
+Si un écran a besoin d'une donnée qui n'existe pas encore (ex. le compteur `7/13`), elle se **dérive** de ce que le modèle expose déjà. Elle ne se calcule pas dans l'UI et ne s'ajoute pas au modèle.
 
 **Interdits, sans exception :**
 - modifier `PointageValue`, `reg`, `cancel`, `join`, `etatCellule`, `slotDe`, `tousLesSlots`
@@ -146,17 +146,17 @@ Ordre : **Scan · Rapport · Liste · Réglages**. Libellés 11 px sous l'icône
 ### 5.1 Bande compteur
 
 ```
-Jour 1 · Matin                    7 / 16 pointés
+Jour 1 · Matin                    7 / 13 pointés
 ```
 - gauche : slot courant, 12 px, `--vert-300`
-- droite : `7` en 15 px/500 blanc, ` / 16 pointés` en 12 px `--vert-300`
+- droite : `7` en 15 px/500 blanc, ` / 13 pointés` en 12 px `--vert-300`
 
 **Dérivation, sans toucher au modèle :**
 ```js
 const slot = slotAvecOverride(Date.now(), overrideCourant);
 const n = slot ? PARTICIPANTS.filter(p => etatCellule(p, slot, Date.now()).type === 'present').length : 0;
 ```
-Si `slot === null` → afficher `Hors créneau` et `— / 16`.
+Si `slot === null` → afficher `Hors créneau` et `— / 13`.
 
 ### 5.2 Caméra
 
@@ -219,7 +219,7 @@ Le panneau reste affiché **300 ms minimum** (`camera.js` gèle déjà la boucle
 **Barre de recherche** — bordure `--bord-2`, rayon 8 px, icône loupe 16 px `--txt-3`, placeholder `Rechercher un nom…`. Branchée sur `match()` existante.
 
 **Filtres** — pastilles rayon 14 px, 12 px :
-- `Tous · 16` actif → fond `--vert-900`, texte blanc
+- `Tous · 13` actif → fond `--vert-900`, texte blanc
 - `Absents · 4` inactif → bordure `--bord-2`, texte `--txt-2`
 - à droite : icônes export ↓ et import ↑, 17 px `--txt-2`
 
@@ -336,8 +336,8 @@ Générer les deux PDF **depuis Chrome desktop**, marges Aucune, échelle 100. D
 - [ ] `print.css` identique à l'octet près avant/après
 - [ ] Le PDF de rapport est **pixel-identique** avant/après (test §9)
 - [ ] Les 4 écrans correspondent aux maquettes approuvées
-- [ ] Le nom en 24 px tient sans troncature sur le plus long des 16 noms
-- [ ] `Tous · 16` et `Absents · N` comptent juste
+- [ ] Le nom en 24 px tient sans troncature sur le plus long des 13 noms
+- [ ] `Tous · 13` et `Absents · N` comptent juste
 - [ ] Le bandeau rouge apparaît dès que `DATES ≠ 4-6 août`, avec les dates réelles citées
 - [ ] Pastille orange sur un pointage `mode:'manuel'`
 - [ ] **Physique** : lisible à bout de bras, en salle, une main occupée

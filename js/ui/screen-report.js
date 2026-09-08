@@ -26,14 +26,20 @@ function cellulesJour(participant, tNow, m) {
   }).join('');
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function buildAbsencesBlock(absences) {
   const listItems = absences.map(a => {
     const p = PARTICIPANTS.find(pp => pp.numero === a.numero);
     const nom = p ? p.nomComplet : `Participant n\u00b0${a.numero}`;
     const { phrase, motif } = phraseAbsence(a, nom);
-    let html = `<div class="abs">\u2022\u00a0\u00a0${phrase}`;
+    // phrase et motif contiennent des données saisies (motif libre) : échapper avant insertion HTML
+    const phraseHtml = escapeHtml(phrase);
+    let html = `<div class="abs">\u2022\u00a0\u00a0${phraseHtml}`;
     if (motif) {
-      html += `<div class="motif">Motif : ${motif}.</div>`;
+      html += `<div class="motif">Motif : ${escapeHtml(motif)}.</div>`;
     } else {
       html += `<div class="motif">Motif : ________________________________</div>`;
     }
@@ -57,10 +63,10 @@ export function buildA4Html(m, tNow, absences = []) {
 
     if (i === 0) {
       rowsHtml += `<tr>
-        <td rowspan="16" class="theme">${cfg.THEME}</td>
-        <td rowspan="16" class="lieu">${cfg.LIEU}</td>
+        <td rowspan="${PARTICIPANTS.length}" class="theme">${cfg.THEME}</td>
+        <td rowspan="${PARTICIPANTS.length}" class="lieu">${cfg.LIEU}</td>
         <td class="perso">${p.numero}. ${p.nomComplet}</td>
-        <td rowspan="16" class="eff">${PARTICIPANTS.length}</td>
+        <td rowspan="${PARTICIPANTS.length}" class="eff">${PARTICIPANTS.length}</td>
         ${jours}
       </tr>`;
     } else {
@@ -77,11 +83,11 @@ export function buildA4Html(m, tNow, absences = []) {
     <img class="band" src="${HEADER_BAND}" alt="">
     <table class="presence">
       <colgroup>
-        <col style="width:26.84mm"><col style="width:15.91mm">
-        <col style="width:49.02mm"><col style="width:17.02mm">
-        <col style="width:8.54mm"><col style="width:8.54mm">
-        <col style="width:8.54mm"><col style="width:8.54mm">
-        <col style="width:8.54mm"><col style="width:8.54mm">
+        <col style="width:24.61mm"><col style="width:18.13mm">
+        <col style="width:51.19mm"><col style="width:14.87mm">
+        <col style="width:8.55mm"><col style="width:8.59mm">
+        <col style="width:7.94mm"><col style="width:9.00mm">
+        <col style="width:7.94mm"><col style="width:9.21mm">
       </colgroup>
       <tbody>
         <tr class="r0"><td colspan="10" class="vert">DIRECTION DES AFFAIRES G\u00c9N\u00c9RALE</td></tr>

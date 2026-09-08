@@ -92,11 +92,11 @@ Somme : 26.84 + 15.91 + 49.02 + 17.02 + 51.23 = **160.02 mm** ✓
 | R0 | `DIRECTION DES AFFAIRES GÉNÉRALE` (colspan 10, fond vert) | **5.08** |
 | R1 | `THÈMES · LIEU · PERSONNELS · EFFECTIFS · Jour 1 · Jour 2 · Jour 3` | **8.47** |
 | R2 | 4 cellules vertes vides + `Mt · Md · Mt · Md · Mt · Md` | **8.38** |
-| R3–R18 | les 16 participants | **8.78** en moyenne (140.46 / 16) |
+| R3–R15 | les 13 participants (liste révisée) | **8.78** en moyenne (114.14 / 13) |
 
 ⚠️ **R1 et R2 ne sont PAS fusionnées verticalement.** Word n'utilise pas de `rowspan` ici : R2 contient **4 vraies cellules vides au fond vert** sous THÈMES / LIEU / PERSONNELS / EFFECTIFS. L'effet visuel de fusion vient uniquement de la couleur identique. **Reproduire ce montage, pas un `rowspan=2`** — sinon le trait horizontal entre R1 et R2 disparaîtrait sous ces 4 colonnes, alors qu'il est absent dans le rendu Word par coïncidence de couleur, pas par fusion.
 
-En revanche, **THÈMES, LIEU et EFFECTIFS utilisent bien `vMerge` sur les 16 lignes participants** → `rowspan="16"` en HTML.
+En revanche, **THÈMES, LIEU et EFFECTIFS utilisent bien `vMerge` sur les 13 lignes participants** → `rowspan="13"` en HTML.
 
 ---
 
@@ -108,7 +108,7 @@ En revanche, **THÈMES, LIEU et EFFECTIFS utilisent bien `vMerge` sur les 16 lig
 | `DIRECTION DES AFFAIRES GÉNÉRALE` | 10 pt, **gras**, centré |
 | `THÈMES / LIEU / PERSONNELS / EFFECTIFS / Jour n / Mt / Md` | 10 pt, **gras**, centré |
 | Cellule THÈMES (le thème) | 10 pt, **gras**, centré |
-| `DOUALA`, `16` | 10 pt, normal, centré |
+| `DOUALA`, `13` | 10 pt, normal, centré |
 | Noms des participants | 10 pt, normal, **justifié** (`w:jc="both"`), liste numérotée auto (`numId=2`, `ind left=319 hanging=259` twips → retrait 5.6 mm, négatif 4.6 mm) |
 | Fond vert (R0 + les 4 cellules de R2) | **`#E2EFD9`** |
 | Bordures | `single`, `w:sz=4` → **0.5 pt**, noir, **toutes** (extérieures + intérieures) |
@@ -130,7 +130,7 @@ Sur téléphone, le rendu tombera sur le repli système. **C'est le seul écart 
 ## 6. Contenu des cellules
 
 ### Colonne PERSONNELS
-Numérotation automatique `1.` à `16.`, puis le `nomComplet` **verbatim** de `js/data.js`.
+Numérotation automatique `1.` à `13.`, puis le `nomComplet` **verbatim** de `js/data.js`.
 Texte **justifié**, comme dans le source (c'est ce qui produit les grands espaces dans `ANYOUZO'A    Marc Thyrille`). **Reproduire la justification**, ne pas passer en aligné à gauche « parce que c'est plus joli ».
 
 ### Colonnes Mt / Md — le contenu dynamique
@@ -155,7 +155,7 @@ Réglages obligatoires :
 
 Le rendu **bi-ligne n'est pas une préférence esthétique : c'est une nécessité géométrique**. `P 08h42` sur une seule ligne est impossible dans 8.54 mm.
 
-**Vérifier par l'impression, pas par l'œil sur écran** : imprimer une page test avec les 16 lignes remplies de `P 08h42`, mesurer à la règle qu'aucun texte ne déborde ni ne se coupe.
+**Vérifier par l'impression, pas par l'œil sur écran** : imprimer une page test avec les 13 lignes remplies de `P 08h42`, mesurer à la règle qu'aucun texte ne déborde ni ne se coupe.
 
 ---
 
@@ -191,13 +191,13 @@ Le rendu **bi-ligne n'est pas une préférence esthétique : c'est une nécessit
       </tr>
       <!-- 1re ligne participant : porte les rowspan -->
       <tr>
-        <td rowspan="16" class="theme">Initiation au processus BIM dans la gestion des projets Immobiliers</td>
-        <td rowspan="16" class="lieu">DOUALA</td>
+        <td rowspan="13" class="theme">Initiation au processus BIM dans la gestion des projets Immobiliers</td>
+        <td rowspan="13" class="lieu">DOUALA</td>
         <td class="perso">1. YEBGA Jacques Albert</td>
-        <td rowspan="16" class="eff">16</td>
+        <td rowspan="13" class="eff">13</td>
         <td class="cell-jour">…</td> <!-- ×6 -->
       </tr>
-      <!-- lignes 2 à 16 : 1 cellule perso + 6 cellules jour -->
+      <!-- lignes 2 à 13 : 1 cellule perso + 6 cellules jour -->
     </tbody>
   </table>
 
@@ -257,7 +257,7 @@ tr.p  { height: 8.78mm; }
 
 Ne jamais déclarer la page conforme « à l'œil ». Procédure :
 
-1. Générer la page HTML avec des données de test (16 lignes, mélange de `P`, `A`, vides).
+1. Générer la page HTML avec des données de test (13 lignes, mélange de `P`, `A`, vides).
 2. Imprimer → Enregistrer en PDF depuis le navigateur.
 3. Rastériser à 300 dpi : `pdftoppm -png -r 300 sortie.pdf test`
 4. Rastériser le .docx de référence à 300 dpi (même commande sur le PDF issu de Word).
@@ -280,7 +280,7 @@ Les seuls écarts tolérés : le rendu du texte du tableau (police de repli, §5
 | Erreur | Réalité |
 |---|---|
 | Ajouter un en-tête « République du Cameroun / MINHDU » | **N'existe pas.** L'en-tête est GREEN INNOVATIVE'S + ACCA. `DIRECTION DES AFFAIRES GÉNÉRALE` est une **ligne interne du tableau**. |
-| Ajouter une colonne `N°` | Le document **n'en a pas**. La numérotation `1.` à `16.` est dans la colonne PERSONNELS. |
+| Ajouter une colonne `N°` | Le document **n'en a pas**. La numérotation `1.` à `13.` est dans la colonne PERSONNELS. |
 | Estimer les largeurs (« ~96 mm », « ~14 mm ») | **Faux.** Les cases Jour font 8.54 mm, pas 14. Mesurer, toujours. |
 | Supposer 15 mm de marge | **Faux.** 25 mm — et le tableau déborde à gauche jusqu'à 9.91 mm. |
 | Ajouter un bloc de statistiques dans le PDF | Décision client : **non**. Les stats restent à l'écran. |

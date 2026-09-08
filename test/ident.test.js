@@ -9,13 +9,19 @@ test('A2 — idDe(1) === "BIM26-001"', () => {
   assertEq(idDe(1), 'BIM26-001');
 });
 
-test('A2 — idDe(16) === "BIM26-016"', () => {
-  assertEq(idDe(16), 'BIM26-016');
+test('A2 — idDe(13) === "BIM26-013" (dernier de la liste r\u00e9vis\u00e9e)', () => {
+  assertEq(idDe(13), 'BIM26-013');
 });
 
-test('A2 — injective sur les 16 participants', () => {
+test('A2 — injective sur les 13 participants', () => {
   const ids = new Set(PARTICIPANTS.map(p => idDe(p.numero)));
-  assertEq(ids.size, 16);
+  assertEq(ids.size, 13);
+});
+
+test('A2 — les ids supprim\u00e9s 014/015/016 ne sont plus connus', () => {
+  for (const id of ['BIM26-014', 'BIM26-015', 'BIM26-016']) {
+    assert(!IDS_CONNUS.has(id), `${id} inconnu`);
+  }
 });
 
 // ─── A3 — checksum ──────────────────────────────────────
@@ -63,7 +69,7 @@ test('A4 — payload("BIM26-001") retourne "BIM26-001-XX"', async () => {
   assert(/^BIM26-001-[A-Z2-7]{2}$/.test(p), `format: "${p}"`);
 });
 
-test('A4 — valider(payload(id)) === "ok" pour les 16 ids', async () => {
+test('A4 — valider(payload(id)) === "ok" pour les 13 ids', async () => {
   await precalcChecksums();
   for (const p of PARTICIPANTS) {
     const id = idDe(p.numero);
@@ -102,6 +108,12 @@ test('A4 — ordre des gardes (§P4) : id inconnu testé avant checksum', async 
   assertEq(valider('BIM26-999-ZZ'), 'inconnu');
   // "BIM26-001-ZZ" : id connu, mauvais checksum → 'checksum'
   assertEq(valider('BIM26-001-ZZ'), 'checksum');
+});
+
+test('A4 — badge supprim\u00e9 (ex. BIM26-014) avec bon checksum → "inconnu"', async () => {
+  await precalcChecksums();
+  const ck = await checksum('BIM26-014');
+  assertEq(valider('BIM26-014-' + ck), 'inconnu');
 });
 
 test('A4 — valider reste synchrone (n\'est pas async)', () => {

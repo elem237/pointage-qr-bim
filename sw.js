@@ -1,4 +1,4 @@
-const CACHE = 'bim-v8';
+const CACHE = 'bim-v9';
 
 const ASSETS = [
   './index.html',
@@ -51,7 +51,8 @@ self.addEventListener('fetch', event => {
     caches.match(event.request, { ignoreSearch: true }).then(r => {
       if (r) return r;
       if (event.request.mode === 'navigate') return caches.match('./index.html');
-      return fetch(event.request);
+      // Cache-first STRICT (Invariant 9.2) : aucun repli réseau.
+      return Response.error();
     })
   );
 });

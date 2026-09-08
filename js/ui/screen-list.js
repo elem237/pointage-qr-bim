@@ -130,7 +130,7 @@ export function screenList(container, store, m, tNow = Date.now()) {
   function renderFilterPills() {
     const allBtn = container.querySelector('#ls-filter-all');
     const absBtn = container.querySelector('#ls-filter-abs');
-    if (allBtn) allBtn.innerHTML = `Tous \u00b7 16`;
+    if (allBtn) allBtn.innerHTML = `Tous \u00b7 ${PARTICIPANTS.length}`;
     if (absBtn) absBtn.innerHTML = `Absents \u00b7 ${absentsCount()}`;
   }
 
@@ -304,7 +304,7 @@ export function screenList(container, store, m, tNow = Date.now()) {
           '<input id="ls-search" type="text" placeholder="Rechercher un nom\u2026" autocomplete="off">' +
         '</div>' +
         '<div class="ls-filters">' +
-          '<button class="ls-filter ls-filter--active" id="ls-filter-all" data-filter="all">Tous \u00b7 16</button>' +
+          '<button class="ls-filter ls-filter--active" id="ls-filter-all" data-filter="all">Tous \u00b7 ' + PARTICIPANTS.length + '</button>' +
           '<button class="ls-filter" id="ls-filter-abs" data-filter="absents">Absents \u00b7 ' + absentsCount() + '</button>' +
           '<div class="ls-filter-spacer"></div>' +
           '<button id="ls-export" class="ls-icon-btn" title="Exporter">' +
