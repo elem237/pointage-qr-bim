@@ -42,7 +42,9 @@ async function getCacheStatus() {
       const reqs = await c.keys();
       total += reqs.length;
     }
-    return total;
+    // Nom du cache bim-* actif = version réellement en service sur cet appareil.
+    const bim = keys.filter(k => k.startsWith('bim-')).sort().pop() || null;
+    return { total, bim };
   } catch {
     return null;
   }
@@ -126,12 +128,12 @@ export function screenSetup(container, opts = {}) {
       '<div class="setup-footer" id="setup-footer">Hors-ligne : non configur\u00e9</div>' +
     '</div>';
 
-  getCacheStatus().then(nb => {
+  getCacheStatus().then(st => {
     const footer = container.querySelector('#setup-footer');
-    if (nb !== null && nb > 0) {
-      footer.textContent = 'Hors-ligne pr\u00eat \u00b7 ' + nb + ' objets en cache';
-    } else if (nb !== null) {
-      footer.textContent = 'Hors-ligne pr\u00eat \u00b7 0 objet en cache';
+    if (st !== null && st.total > 0) {
+      footer.textContent = 'Hors-ligne pr\u00eat \u00b7 ' + (st.bim || 'cache inconnu') + ' \u00b7 ' + st.total + ' objets en cache';
+    } else if (st !== null) {
+      footer.textContent = 'Hors-ligne pr\u00eat \u00b7 ' + (st.bim || 'cache inconnu') + ' \u00b7 0 objet en cache';
     }
   });
 
