@@ -450,6 +450,16 @@ Avec `mergeConfig({ DATES: ['2026-09-15', '2026-09-16', '2026-09-17'] })` :
 
 **Vérifié** : Node 170/180 (10 échecs = mêmes pré-existants navigateur-only).
 
+### Note d'impression universelle + e-mail du pied — 2026-09-08
+
+La note « Impression depuis iPhone : rendu à 88 % » est remplacée par une consigne valable sur **tout appareil** : « Impression : marges « Aucune », échelle 100 %, arrière-plans activés » (`screen-report.js`, test U3.6, `INTERFACE.md` §6). CACHE → `bim-v13`.
+
+E-mail du pied de rapport : `greeninnovatives46@gmail.com` → `infos@green-innovatives.com`. Patché en pixels dans `footer_band.png` (Segoe UI Italic, bleu `#0563C1`, souligné — zone modifiée vérifiée localisée), `FOOTER_BAND` base64 régénéré dans `assets/logos.js`, et texte + liens `mailto:` mis à jour dans `LISTE DE PRÉSENCE.docx` (footers 2 et 3). Couvert par le bump `bim-v13` (non déployé au moment du patch).
+
+### Numérotation débordant en colonne LIEU — 2026-09-08
+
+**Cause** : `table.presence td` (spécificité 0,1,2) bat `.perso` (0,1,0) sur `padding-left` → les cellules avaient 1 mm au lieu des 5.6 mm mesurés (SKILL §5), et le retrait négatif `-4.6 mm` projetait les numéros 3.6 mm hors cellule, dans LIEU. **Correctif** : `style="padding-left:5.6mm"` inline sur les `td.perso` (`screen-report.js`) — `print.css` inchangé (pare-feu + test RG3 préservés), écran et impression corrigés d'un coup. Test P9b ajouté ; `buildA4Html` vérifié en Node (13/13 cellules).
+
 ---
 
 ## Prochaine étape

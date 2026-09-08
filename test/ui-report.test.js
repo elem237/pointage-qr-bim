@@ -83,14 +83,15 @@ test('U3.5 — bouton impression présent', () => {
   assert(btn.textContent.includes('Imprimer'), 'contient Imprimer');
 });
 
-/* ── U3.6 — Note présente ── */
-test('U3.6 — note iPhone présente', () => {
+/* ── U3.6 — Note d'impression universelle (tout appareil) ── */
+test('U3.6 — note impression présente, sans mention iPhone', () => {
   const div = document.createElement('div');
   screenReport(div, new Map(), douala(2026, 7, 4, 18, 0));
   const note = div.querySelector('#report-note');
   assert(note !== null, '#report-note');
-  assert(note.textContent.includes('iPhone'), 'mentionne iPhone');
-  assert(note.textContent.includes('88 %'), 'mentionne 88%');
+  assert(!note.textContent.includes('iPhone'), 'aucune mention iPhone');
+  assert(note.textContent.includes('100'), 'mentionne échelle 100');
+  assert(note.textContent.includes('Aucune'), 'mentionne marges Aucune');
 });
 
 /* ── U3.7 — A4 page intacte dans preview ── */

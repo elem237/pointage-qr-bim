@@ -65,13 +65,16 @@ export function buildA4Html(m, tNow, absences = []) {
       rowsHtml += `<tr>
         <td rowspan="${PARTICIPANTS.length}" class="theme">${cfg.THEME}</td>
         <td rowspan="${PARTICIPANTS.length}" class="lieu">${cfg.LIEU}</td>
-        <td class="perso">${p.numero}. ${p.nomComplet}</td>
+        <!-- padding-left inline : sans lui, la règle td (plus spécifique
+             que .perso) impose 1 mm et le retrait négatif -4.6 mm fait déborder
+             la numérotation dans la colonne LIEU. print.css inchangé. -->
+        <td class="perso" style="padding-left:5.6mm">${p.numero}. ${p.nomComplet}</td>
         <td rowspan="${PARTICIPANTS.length}" class="eff">${PARTICIPANTS.length}</td>
         ${jours}
       </tr>`;
     } else {
       rowsHtml += `<tr>
-        <td class="perso">${p.numero}. ${p.nomComplet}</td>
+        <td class="perso" style="padding-left:5.6mm">${p.numero}. ${p.nomComplet}</td>
         ${jours}
       </tr>`;
     }
@@ -165,7 +168,7 @@ export function screenReport(container, m, tNow = Date.now(), store = null) {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         Imprimer le rapport
       </button>
-      <div id="report-note">Impression depuis iPhone : rendu \u00e0 88 % &middot; Proportions exactes</div>
+      <div id="report-note">Impression : marges &laquo; Aucune &raquo;, \u00e9chelle 100 %, arri\u00e8re-plans activ\u00e9s</div>
     </div>
     ${a4Html}
   </div>`;

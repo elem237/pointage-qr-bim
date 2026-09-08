@@ -199,7 +199,7 @@ Le panneau reste affiché **300 ms minimum** (`camera.js` gèle déjà la boucle
 2. **Grille 6 créneaux** — `grid-template-columns: repeat(6,1fr)`, gap 5 px. Échu → fond `--p-bg`, libellé 11 px et compte 15 px/500 en `--p-fg`. Non échu → fond `--surf-1`, `—` en `--v-fg`.
 3. **Aperçu A4** — miniature dans un cadre blanc, rayon 8 px. `Toucher pour agrandir` en 11 px `--txt-3`.
 4. **Bouton d'impression** — pleine largeur, `--vert-900`, 14 px de padding, 15 px/500, icône imprimante.
-5. **Note** — `Impression depuis iPhone : rendu à 88 % · Proportions exactes`, 11 px `--txt-3`, centré.
+5. **Note** — `Impression : marges « Aucune », échelle 100 %, arrière-plans activés`, 11 px `--txt-3`, centré. Consigne valable sur **tout appareil** (Android, iPhone, tablette, ordinateur).
 
 ### 6.1 L'aperçu
 

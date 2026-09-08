@@ -122,6 +122,17 @@ test('P9 — format "numero. nomComplet"', () => {
   assert(firstPerso.textContent.includes('1. YEBGA'));
 });
 
+/* ── P9b — Retrait hanging : la numérotation reste dans PERSONNELS ── */
+test('P9b — td.perso avec padding-left 5.6mm (pas de débord en LIEU)', () => {
+  const div = document.createElement('div');
+  screenReport(div, new Map(), douala(2026, 7, 4, 18, 0));
+  const persos = div.querySelectorAll('td.perso');
+  assert(persos.length > 0, 'des cellules perso');
+  persos.forEach(td => {
+    assertEq(td.style.paddingLeft, '5.6mm', 'retrait SKILL.md §5');
+  });
+});
+
 /* ── P10 — 13 cellules perso ── */
 test('P10 — 13 cellules perso', () => {
   const div = document.createElement('div');
