@@ -9,6 +9,7 @@ import {
   renderEtatPanel,
   updateCounter,
   ERREUR_LABELS,
+  autotestDecodeur,
 } from '../js/ui/screen-scan.js';
 import { PARTICIPANTS } from '../js/data.js';
 
@@ -233,4 +234,11 @@ test('ERREUR_LABELS a les 3 codes', () => {
   assert(ERREUR_LABELS.format === 'Format non reconnu');
   assert(ERREUR_LABELS.checksum === 'Checksum invalide');
   assert(ERREUR_LABELS.inconnu === 'Code inconnu');
+});
+
+/* ── Autotest décodeur (diagnostic embarqué) ── */
+test('autotestDecodeur lit un QR de badge synthétique', async () => {
+  const r = await autotestDecodeur();
+  assert(r.ok === true, `décodeur OK, got: ${JSON.stringify(r)}`);
+  assert(/^BIM26-001-[A-Z2-7]{2}$/.test(r.lu), `payload valide, got: ${r.lu}`);
 });

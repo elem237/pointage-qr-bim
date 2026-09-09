@@ -465,6 +465,20 @@ Avec `mergeConfig({ DATES: ['2026-09-15', '2026-09-16', '2026-09-17'] })` :
 
 **Vérifié** : Node 172/182 (mêmes 10 pré-existants) ; `print.css` intact. **Spec inchangée** : créneaux 07:00/13:00/17:30, 10 Hz, ROI — le midi `[13:00, 17:30)` est couvert par les tests B4/B5 existants.
 
+### Scan qui ne lit plus rien (pointage manuel forcé) — 2026-09-08
+
+**Symptôme** : aucun scan n'aboutit, silence ou échec, repli manuel obligatoire. Ajout d'un **autotest du décodeur embarqué** pour trancher sans deviner.
+
+| Fichier | Modification |
+|---|---|
+| `js/ui/screen-scan.js` | `autotestDecodeur()` exporté : génère un vrai QR (même lib que les badges), le rasterise, le décode par le même chemin ; bouton « Tester le décodeur » dans le bloc Diagnostic + phrase de conclusion |
+| `test/ui-scan.test.js` | autotest OK sur QR synthétique (navigateur) |
+| `sw.js` | CACHE → `bim-v15` |
+
+**Lecture sur le terrain** : test OK + scan live KO → caméra/lumière/mise au point (rapprocher à 15-30 cm, éviter reflets/soleil, nettoyer l'objectif) ; test HS → décodeur cassé sur l'appareil (manuel en attendant).
+
+**Vérifié** : syntaxe OK, Node 172/182 inchangé, `print.css` intact.
+
 ### Note d'impression universelle + e-mail du pied — 2026-09-08
 
 La note « Impression depuis iPhone : rendu à 88 % » est remplacée par une consigne valable sur **tout appareil** : « Impression : marges « Aucune », échelle 100 %, arrière-plans activés » (`screen-report.js`, test U3.6, `INTERFACE.md` §6). CACHE → `bim-v13`.

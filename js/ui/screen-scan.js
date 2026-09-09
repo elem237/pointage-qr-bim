@@ -5,11 +5,12 @@
 import { startCamera, stopCamera, lancerBoucle, onStreamEnded } from '../scan/camera.js';
 import { Scan } from '../scan/pipeline.js';
 import { decode } from '../scan/decode.js';
+import qrcode from '../../vendor/qrcode.js';
+import { idDe, payload as genererPayload } from '../model/ident.js';
 import { feedback, initAudio } from '../feedback.js';
 import { slotAvecOverride } from '../model/slots.js';
 import { etatCellule } from '../model/report.js';
 import { PARTICIPANTS } from '../data.js';
-import { idDe } from '../model/ident.js';
 import { getConfig } from '../config.js';
 
 const H_MAP = new Map();
@@ -77,6 +78,8 @@ function template() {
   <details id="scan-diag">
     <summary>Diagnostic</summary>
     <div id="scan-diag-body">trames : 0 · lus : 0 · —</div>
+    <button id="scan-diag-test" type="button">Tester le décodeur</button>
+    <div id="scan-diag-test-result"></div>
   </details>
 </div>`;
 }
@@ -221,6 +224,42 @@ function participantDePayload(payload) {
   return PARTICIPANTS.find(p => p.numero === numero) || null;
 }
 
+/**
+ * Autotest du décodeur SUR L'APPAREIL : génère un vrai QR de badge
+ * (même librairie que les badges imprimés), le rasterise et le décode
+ * par le même chemin que le scan live.
+ * - OK → le décodage marche : un échec live vient de la caméra/lumière.
+ * - HS → le décodage est cassé sur cet appareil (repli : pointage manuel).
+ * @returns {Promise<{ok: boolean, attendu?: string, lu?: string|null, erreur?: string}>}
+ */
+export async function autotestDecodeur() {
+  try {
+    const attendu = await genererPayload(idDe(1));
+    const qr = qrcode(1, 'Q');
+    qr.addData(attendu, 'Alphanumeric');
+    qr.make();
+    const n = qr.getModuleCount();
+    const S = 10, M = 4;
+    const size = (n + M * 2) * S;
+    const cv = document.createElement('canvas');
+    cv.width = size;
+    cv.height = size;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#000000';
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        if (qr.isDark(r, c)) ctx.fillRect((c + M) * S, (r + M) * S, S, S);
+      }
+    }
+    const lu = await decode(ctx.getImageData(0, 0, size, size), 5000);
+    return { ok: lu === attendu, attendu, lu };
+  } catch (e) {
+    return { ok: false, erreur: String((e && e.message) || e) };
+  }
+}
+
 /* ── screenScan ── */
 
 export async function screenScan(container, store) {
@@ -279,6 +318,19 @@ export async function screenScan(container, store) {
     visEcoute = true;
     document.addEventListener('visibilitychange', onVisibilite);
   }
+
+  const btnTest = container.querySelector('#scan-diag-test');
+  const resTest = container.querySelector('#scan-diag-test-result');
+  if (btnTest) {
+    btnTest.addEventListener('click', async () => {
+      resTest.textContent = 'Test en cours…';
+      const r = await autotestDecodeur();
+      resTest.textContent = r.ok
+        ? `Décodeur OK (${r.lu}) — un échec live vient de la caméra/lumière.`
+        : `Décodeur HS (attendu ${r.attendu || '?'}, lu ${r.lu ?? r.erreur}) — utilisez le pointage manuel.`;
+    });
+  }
+
   demarrerScan();
     }
   }

@@ -1,4 +1,4 @@
-const CACHE = 'bim-v14';
+const CACHE = 'bim-v15';
 
 const ASSETS = [
   './index.html',

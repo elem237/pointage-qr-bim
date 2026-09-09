@@ -765,6 +765,8 @@ tr.p  { height: 8.78mm; }
 }
 #scan-diag summary { padding: 4px 12px; cursor: pointer; min-height: 44px; }
 #scan-diag-body { font-family: var(--mono); font-size: 10px; padding: 0 12px 6px; }
+#scan-diag-test { margin: 0 12px 4px; min-height: 44px; }
+#scan-diag-test-result { font-size: 11px; padding: 0 12px 8px; }
 
 /* ── Responsive multi-appareils : Android / iPhone / tablette / ordinateur ── */
 
