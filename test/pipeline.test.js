@@ -2,6 +2,7 @@ import { test, assert, assertEq } from './harness.js';
 import { Scan } from '../js/scan/pipeline.js';
 import { decode } from '../js/scan/decode.js';
 import { initDB } from '../js/db/store.js';
+import { PARTICIPANTS } from '../js/data.js';
 import { precalcChecksums, idDe, payload } from '../js/model/ident.js';
 import { mergeConfig } from '../js/config.js';
 
@@ -10,6 +11,42 @@ test('pipeline-setup-dates', () => {
 });
 
 function dbName() { return 'bim-test-' + Date.now() + '-' + Math.random(); }
+
+function participantDeCle(cle) {
+  const id = cle.split('|')[0];
+  return PARTICIPANTS.find(p => idDe(p.numero) === id) || null;
+}
+
+/* Repli Node uniquement : IndexedDB n'existe pas hors navigateur.
+ * Sémantique de reg() recopiée de store.js (DEJA_POINTE + tau,
+ * génération incrémentée, participant résolu). Dans le navigateur,
+ * c'est le vrai initDB qui tourne — couverture inchangée. */
+function fakeInitDB() {
+  const m = new Map();
+  return {
+    async reg(cle, tau, mode, override) {
+      const v = m.get(cle);
+      if (v != null && v.statut === 'actif') {
+        return { resultat: 'DEJA_POINTE', tau: v.tau };
+      }
+      const g = (v == null) ? 0 : v.generation + 1;
+      const vp = { generation: g, statut: 'actif', tau, mode, device: 'test-node', override };
+      m.set(cle, vp);
+      return { resultat: 'OK', participant: participantDeCle(cle) };
+    },
+    getPointages: () => m,
+    close() {},
+  };
+}
+
+async function openTestDB() {
+  if (typeof indexedDB === 'undefined') {
+    return { s: fakeInitDB(), cleanup: async () => {} };
+  }
+  const n = dbName();
+  const s = await initDB(n);
+  return { s, cleanup: async () => { s.close(); await deleteDB(n); } };
+}
 
 function deleteDB(n) {
   return new Promise((resolve, reject) => {
@@ -25,22 +62,19 @@ const T_HORS    = Date.UTC(2025, 0, 1, 12, 0, 0);  // 2025-01-01 — pas dans DA
 // ─── Branche 1 — decode(null) → RIEN ─────────────────
 
 test('§7.1 — Scan branch 1: decode(1x1 noise) → RIEN', async () => {
-  const n = dbName();
-  const s = await initDB(n);
+  const { s, cleanup } = await openTestDB();
   const H = new Map();
-  const img = new ImageData(1, 1);
+  const img = { data: new Uint8ClampedArray(4), width: 1, height: 1 };
   const r = await Scan(img, T_SESSION, 'auto', s, H);
   assertEq(r.resultat, 'RIEN', 'bruit → RIEN');
-  s.close();
-  await deleteDB(n);
+  await cleanup();
 });
 
 // ─── Branche 2 — debounce bloque → RIEN ──────────────
 
 test('§7.2 — Scan branch 2: debounce bloque la 2e occurrence → RIEN', async () => {
   await precalcChecksums();
-  const n = dbName();
-  const s = await initDB(n);
+  const { s, cleanup } = await openTestDB();
   const H = new Map();
   const validW = await payload(idDe(1));
   const fakeDecode = async () => validW;
@@ -51,70 +85,60 @@ test('§7.2 — Scan branch 2: debounce bloque la 2e occurrence → RIEN', async
   const r2 = await Scan(null, T_SESSION, 'auto', s, H, fakeDecode);
   assertEq(r2.resultat, 'RIEN', '2e scan même t → RIEN (debounce bloque)');
 
-  s.close();
-  await deleteDB(n);
+  await cleanup();
 });
 
 // ─── Branche 3 — valider erreur → ERREUR ─────────────
 
 test('§7.3a — Scan branch 3: format invalide → ERREUR(format)', async () => {
-  const n = dbName();
-  const s = await initDB(n);
+  const { s, cleanup } = await openTestDB();
   const H = new Map();
   const fakeDecode = async () => 'pas-un-qr';
   const r = await Scan(null, T_SESSION, 'auto', s, H, fakeDecode);
   assertEq(r.resultat, 'ERREUR');
   assertEq(r.code, 'format');
-  s.close();
-  await deleteDB(n);
+  await cleanup();
 });
 
 test('§7.3b — Scan branch 3: id inconnu → ERREUR(inconnu)', async () => {
-  const n = dbName();
-  const s = await initDB(n);
+  const { s, cleanup } = await openTestDB();
   const H = new Map();
   const fakeDecode = async () => 'BIM26-999-AA';
   const r = await Scan(null, T_SESSION, 'auto', s, H, fakeDecode);
   assertEq(r.resultat, 'ERREUR');
   assertEq(r.code, 'inconnu');
-  s.close();
-  await deleteDB(n);
+  await cleanup();
 });
 
 test('§7.3c — Scan branch 3: mauvais checksum → ERREUR(checksum)', async () => {
   await precalcChecksums();
-  const n = dbName();
-  const s = await initDB(n);
+  const { s, cleanup } = await openTestDB();
   const H = new Map();
   const fakeDecode = async () => 'BIM26-001-ZZ';
   const r = await Scan(null, T_SESSION, 'auto', s, H, fakeDecode);
   assertEq(r.resultat, 'ERREUR');
   assertEq(r.code, 'checksum');
-  s.close();
-  await deleteDB(n);
+  await cleanup();
 });
 
 // ─── Branche 4 — hors session → HORS_SESSION ─────────
 
 test('§7.4 — Scan branch 4: date hors DATES → HORS_SESSION', async () => {
   await precalcChecksums();
-  const n = dbName();
-  const s = await initDB(n);
+  const { s, cleanup } = await openTestDB();
   const H = new Map();
   const validW = await payload(idDe(1));
   const fakeDecode = async () => validW;
   const r = await Scan(null, T_HORS, 'auto', s, H, fakeDecode);
   assertEq(r.resultat, 'HORS_SESSION');
-  s.close();
-  await deleteDB(n);
+  await cleanup();
 });
 
 // ─── Branche 5 — reg → OK / DEJA_POINTE ──────────────
 
 test('§7.5a — Scan branch 5: succès complet → OK avec participant', async () => {
   await precalcChecksums();
-  const n = dbName();
-  const s = await initDB(n);
+  const { s, cleanup } = await openTestDB();
   const H = new Map();
   const validW = await payload(idDe(1));
   const fakeDecode = async () => validW;
@@ -122,14 +146,12 @@ test('§7.5a — Scan branch 5: succès complet → OK avec participant', async 
   assertEq(r.resultat, 'OK');
   assert(r.participant != null, 'a un participant');
   assertEq(r.participant.numero, 1);
-  s.close();
-  await deleteDB(n);
+  await cleanup();
 });
 
 test('§7.5b — Scan branch 5: 2e scan même cle → DEJA_POINTE', async () => {
   await precalcChecksums();
-  const n = dbName();
-  const s = await initDB(n);
+  const { s, cleanup } = await openTestDB();
   const H = new Map();
   const validW = await payload(idDe(1));
   const fakeDecode = async () => validW;
@@ -143,14 +165,12 @@ test('§7.5b — Scan branch 5: 2e scan même cle → DEJA_POINTE', async () => 
   assertEq(r2.resultat, 'DEJA_POINTE', '2e → DEJA_POINTE');
   assert(typeof r2.tau === 'number', 'tau présent dans DEJA_POINTE');
 
-  s.close();
-  await deleteDB(n);
+  await cleanup();
 });
 
 test('§7.5c — Scan branch 5: même participant, slot différent → OK', async () => {
   await precalcChecksums();
-  const n = dbName();
-  const s = await initDB(n);
+  const { s, cleanup } = await openTestDB();
   const H = new Map();
   const validW = await payload(idDe(1));
   const fakeDecode = async () => validW;
@@ -163,6 +183,5 @@ test('§7.5c — Scan branch 5: même participant, slot différent → OK', asyn
   const r2 = await Scan(null, T_MIDI, 'auto', s, H, fakeDecode);
   assertEq(r2.resultat, 'OK', 'midi même jour → OK');
 
-  s.close();
-  await deleteDB(n);
+  await cleanup();
 });

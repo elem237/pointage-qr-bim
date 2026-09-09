@@ -49,7 +49,9 @@ test('C4 — retenir : juste sous 3000ms → faux', () => {
 });
 
 test('C2 — decode(bruit) → null', async () => {
-  const img = new ImageData(1, 1);
+  // Objet minimal au lieu d'ImageData (absent de Node) : decode ne lit
+  // que data/width/height — fonctionne aussi dans le navigateur.
+  const img = { data: new Uint8ClampedArray(4), width: 1, height: 1 };
   const result = await decode(img);
   assert(result === null, 'decode(1×1 noise) doit retourner null');
 });
@@ -112,6 +114,14 @@ test('ROI — pas de redimensionnement si taille identique', async () => {
   });
   captureROI(video, canvas);
   assertEq(resizes, 0, 'aucune réassignation');
+});
+
+test('ROI — vidéo sans image (0×0) → null, pas d\u2019exception', async () => {
+  const { captureROI } = await import('../js/scan/camera.js');
+  const canvas = fauxCanvas();
+  // Avant : getImageData(0,0,0,0) levait et tuait la boucle en silence total.
+  assertEq(captureROI({ videoWidth: 0, videoHeight: 0 }, canvas), null);
+  assertEq(captureROI({ videoWidth: 640, videoHeight: 0 }, canvas), null);
 });
 
 /* ── Anti-chevauchement (lenteur Android) ── */

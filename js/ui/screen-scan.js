@@ -2,7 +2,7 @@
  * U2 — Écran Scan (INTERFACE.md §5)
  * 4 bandes verticales : Navigation (U1) / Compteur / Caméra / Retour
  */
-import { startCamera, stopCamera, lancerBoucle, onStreamEnded } from '../scan/camera.js';
+import { startCamera, stopCamera, lancerBoucle, onStreamEnded, onStreamMute } from '../scan/camera.js';
 import { Scan } from '../scan/pipeline.js';
 import { decode } from '../scan/decode.js';
 import qrcode from '../../vendor/qrcode.js';
@@ -202,12 +202,12 @@ function heureCourte(t) {
   return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
 }
 
-function majDiag(container, t, force) {
+function majDiag(container, t, force, dims) {
   const el = container.querySelector('#scan-diag-body');
   if (!el) return;
   if (!force && t - _dernierDiag < 1000) return;
   _dernierDiag = t;
-  el.textContent = `trames : ${STATS.trames} · lus : ${STATS.lus} · ${STATS.dernier}`;
+  el.textContent = `trames : ${STATS.trames} · lus : ${STATS.lus} · ${dims || ''} · ${STATS.dernier}`;
 }
 
 async function _decodeTrack(img) {
@@ -335,14 +335,28 @@ export async function screenScan(container, store) {
     }
   }
 
-  function cameraInterrompue() {
+  function cameraInterrompue(message) {
     // Le flux s'est terminé sans arrêt volontaire (OS, surchauffe,
     // révocation) : l'expliquer au lieu d'une vidéo noire muette.
     stream = null;
     if (controller) { controller.stop(); controller = null; }
     panel.style.background = 'var(--danger)';
-    inner.textContent = 'Caméra interrompue — touchez ici pour relancer';
+    inner.textContent = message || 'Caméra interrompue — touchez ici pour relancer';
     panel.addEventListener('click', () => demarrerScan(), { once: true });
+  }
+
+  // Attend une vraie image (dimensions > 0) avant de lancer la boucle.
+  // Sans ça, captureROI tournait sur du vide et tuait la boucle en silence.
+  function attendreImage(video, delaiMs = 3000) {
+    const t0 = Date.now();
+    return new Promise(resolve => {
+      const tick = () => {
+        if (video.videoWidth > 0 && video.videoHeight > 0) return resolve(true);
+        if (Date.now() - t0 >= delaiMs) return resolve(false);
+        setTimeout(tick, 100);
+      };
+      tick();
+    });
   }
 
   async function demarrerScan() {
@@ -357,6 +371,15 @@ export async function screenScan(container, store) {
       // jamais de vidéo noire muette. L'arrêt volontaire (suspendre /
       // arreterScan) met stream à null AVANT : le rappel est ignoré.
       onStreamEnded(stream, () => { if (stream !== null) cameraInterrompue(); });
+      // Source coupée sans 'ended' (mute OS) → même traitement après 2 s.
+      onStreamMute(stream, () => { if (stream !== null) cameraInterrompue('Caméra coupée — touchez ici pour relancer'); });
+      if (!await attendreImage(video)) {
+        const s = stream;
+        stream = null;
+        if (s) stopCamera(s);
+        cameraInterrompue('Caméra sans image — touchez ici pour relancer');
+        return;
+      }
       _derniereT = Date.now();
       updateCounter(container, store, _derniereT, 'auto');
       inner.innerHTML = 'Présentez un badge';
@@ -367,18 +390,19 @@ export async function screenScan(container, store) {
         const t = Date.now();
         _derniereT = t;
         STATS.trames++;
+        const dims = `${video.videoWidth}x${video.videoHeight}`;
 
         const si = slotInfo(t, ov);
         const result = await Scan(roi, t, ov, store, H_MAP, _decodeTrack);
 
         if (result.resultat === 'RIEN') {
-          majDiag(container, t, false);
+          majDiag(container, t, false, dims);
           return;
         }
         STATS.dernier = `${heureCourte(t)} ${result.resultat}` +
           (result.code ? `/${result.code}` : '') +
           (_lastDecodedPayload ? ` ${_lastDecodedPayload.slice(0, 12)}` : '');
-        majDiag(container, t, true);
+        majDiag(container, t, true, dims);
 
         /* enrichir DEJA_POINTE avec le participant via payload capturé */
         let participant = result.participant || null;

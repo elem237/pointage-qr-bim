@@ -479,6 +479,23 @@ Avec `mergeConfig({ DATES: ['2026-09-15', '2026-09-16', '2026-09-17'] })` :
 
 **Vérifié** : syntaxe OK, Node 172/182 inchangé, `print.css` intact.
 
+### Suite Node à 183/183 — 2026-09-08
+
+Les 10 échecs Node restants venaient de dépendances navigateur (`ImageData`, `IndexedDB`), pas du code. `scan.test.js` C2 et `pipeline.test.js` §7 utilisent désormais des objets image simples + un store mémoire **repli Node uniquement** (`openTestDB` : vrai `initDB` dans le navigateur, fake à sémantique identique hors navigateur — couverture navigateur inchangée). **Node : 183/183.** Reste navigateur-only : `store.test.js` (transactions/indexes/migration — un faux invaliderait ce qu'il teste), suites DOM, `pwa`/`deploy`.
+
+### Boucle tuée par vidéo 0×0, trames bloquées à 0 — 2026-09-08
+
+**Diagnostic terrain** : Diagnostic `trames : 0` sur Android ET iPhone = la boucle ne traite aucune image. Cause racine : `captureROI` sur une vidéo sans dimensions (`videoWidth = 0`, typique après une mise en arrière-plan) levait dans `getImageData`, et l'exception tuait `requestAnimationFrame` **définitivement**, en silence total. Le bouton de test (bim-v15) n'était en fait pas encore déployé sur les téléphones.
+
+| Fichier | Modification |
+|---|---|
+| `js/scan/camera.js` | `captureROI` rend `null` si pas d'image (jamais d'exception) ; boucle `lancerBoucle` en `try/catch` (IMMORTELLE) + saut si `roi` null ; `onStreamMute()` exporté (mute OS sans `ended`) |
+| `js/ui/screen-scan.js` | `attendreImage()` (3 s max) avant la boucle, sinon message + relance au toucher ; surveillance `mute` → même message ; dimensions `AxB` ajoutées au Diagnostic |
+| `test/scan.test.js` | `captureROI` 0×0 → `null` |
+| `sw.js` | CACHE → `bim-v16` |
+
+**Vérifié** : syntaxe OK, Node 173/183 (mêmes 10 pré-existants), `print.css` intact. **Lecture Diagnostic v16** : `0x0` dans les dims = caméra sans image (relancer) ; trames qui montent + lus 0 = lumière/mise au point.
+
 ### Note d'impression universelle + e-mail du pied — 2026-09-08
 
 La note « Impression depuis iPhone : rendu à 88 % » est remplacée par une consigne valable sur **tout appareil** : « Impression : marges « Aucune », échelle 100 %, arrière-plans activés » (`screen-report.js`, test U3.6, `INTERFACE.md` §6). CACHE → `bim-v13`.

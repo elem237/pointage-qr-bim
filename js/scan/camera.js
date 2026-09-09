@@ -53,7 +53,11 @@ export function captureROI(video, canvas) {
   const cfg = getConfig();
   const w = video.videoWidth;
   const h = video.videoHeight;
+  // Pas d'image (flux pas prêt, caméra révoquée) : null, JAMAIS d'exception.
+  // Avant, getImageData(0,0,0,0) levait et tuait la boucle en silence total.
+  if (!(w > 0) || !(h > 0)) return null;
   const size = Math.min(w, h) * cfg.ROI_RATIO;
+  if (!(size > 0)) return null;
   const cw = Math.min(Math.ceil(size), ROI_DECODE_MAX);
   const ch = Math.min(Math.ceil(size), ROI_DECODE_MAX);
   if (canvas.width !== cw || canvas.height !== ch) {
@@ -121,6 +125,39 @@ export function onStreamEnded(stream, cb) {
 }
 
 /**
+ * Surveille le MUTE des tracks (l'OS coupe la source sans 'ended' :
+ * caméra prise par une autre app, verrouillage, surchauffe).
+ * Muet plus de `delaiMs` → rappel (l'app affiche un message + relance,
+ * au lieu d'une vidéo gelée/noire muette). Un unmute annule le rappel.
+ * @param {MediaStream} stream
+ * @param {() => void} cb
+ * @param {number} delaiMs
+ * @returns {() => void} fonction de désabonnement
+ */
+export function onStreamMute(stream, cb, delaiMs = 2000) {
+  if (!stream) return () => {};
+  const off = [];
+  for (const track of stream.getTracks()) {
+    let timer = null;
+    const onMute = () => {
+      if (timer !== null) clearTimeout(timer);
+      timer = setTimeout(() => { timer = null; cb(); }, delaiMs);
+    };
+    const onUnmute = () => {
+      if (timer !== null) { clearTimeout(timer); timer = null; }
+    };
+    track.addEventListener('mute', onMute);
+    track.addEventListener('unmute', onUnmute);
+    off.push(() => {
+      track.removeEventListener('mute', onMute);
+      track.removeEventListener('unmute', onUnmute);
+      if (timer !== null) clearTimeout(timer);
+    });
+  }
+  return () => off.forEach(f => f());
+}
+
+/**
  * Boucle de scan throttlée
  * @param {HTMLVideoElement} video
  * @param {HTMLCanvasElement} canvas
@@ -143,13 +180,19 @@ export function lancerBoucle(video, canvas, onFrame) {
     }
     if (time - lastTime >= interval) {
       lastTime = time;
-      // Capture + décodage DANS la garde : quand l'appareil rame, on saute
-      // aussi le getImageData (synchrone, coûteux : synchro GPU→CPU) au lieu
-      // de le payer à chaque tick pour un décodage qui serait ignoré.
-      garde(() => {
-        const roi = captureROI(video, canvas);
-        return onFrame(roi);
-      });
+      try {
+        // Capture + décodage DANS la garde : quand l'appareil rame, on saute
+        // aussi le getImageData (synchrone, coûteux : synchro GPU→CPU) au lieu
+        // de le payer à chaque tick pour un décodage qui serait ignoré.
+        // Le try/catch rend la boucle IMMORTELLE : aucune frame vérolée
+        // (caméra coupée, canvas détaché) ne doit arrêter requestAnimationFrame.
+        garde(() => {
+          const roi = captureROI(video, canvas);
+          if (roi === null) return;
+          return onFrame(roi);
+        });
+      } catch {
+      }
     }
     requestAnimationFrame(loop);
   }
