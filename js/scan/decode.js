@@ -29,7 +29,7 @@ export function _resetDetector() {
  * @param {ImageData} imageData
  * @returns {Promise<string|null>}
  */
-export async function decode(imageData) {
+async function lire(imageData) {
   const detector = getDetector();
   if (detector) {
     try {
@@ -40,4 +40,24 @@ export async function decode(imageData) {
   }
   const code = jsQR(imageData.data, imageData.width, imageData.height);
   return code ? code.data : null;
+}
+
+/**
+ * Décodage avec garde-fou temporel : si le décodeur natif se bloque
+ * (constaté sur le terrain : plus aucun scan, aucun message, sans fin),
+ * on rend la main avec null au lieu de figer la boucle de scan.
+ * @param {ImageData} imageData
+ * @param {number} timeoutMs — délai max, 2000 par défaut
+ * @returns {Promise<string|null>}
+ */
+export async function decode(imageData, timeoutMs = 2000) {
+  let timer = null;
+  try {
+    return await Promise.race([
+      lire(imageData),
+      new Promise(res => { timer = setTimeout(() => res(null), timeoutMs); }),
+    ]);
+  } finally {
+    if (timer !== null) clearTimeout(timer);
+  }
 }

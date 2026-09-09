@@ -448,7 +448,22 @@ Avec `mergeConfig({ DATES: ['2026-09-15', '2026-09-16', '2026-09-17'] })` :
 | `js/scan/camera.js` | capture + décodage DANS la garde (le `getImageData` est sauté quand ça rame → adaptation automatique) ; `ROI_DECODE_MAX = 240` (région ROI inchangée, seuls les pixels de décodage baissent — un QR v1 se lit dès ~4 px/module) |
 | `test/scan.test.js` | 3 tests Node via mocks (plafond 240, petite vidéo intacte, zéro redimensionnement inutile) |
 
-**Vérifié** : Node 170/180 (10 échecs = mêmes pré-existants navigateur-only).
+**Vérifié** : Node 172/182 (10 échecs = mêmes pré-existants navigateur-only).
+
+### Scan muet à 13h09 (matin OK, midi KO) — 2026-09-08
+
+**Symptôme** : silence total, aucun message. Silence = `RIEN` (decode null / boucle figée), pas `HORS_SESSION` ni `ERREUR` (qui sonnent). Pistes : décodeur natif bloqué (la garde v10 ne libérait jamais), promesse pendante, lumière/surchauffe de l'après-midi.
+
+| Fichier | Modification |
+|---|---|
+| `js/scan/decode.js` | `decode(img, timeoutMs=2000)` : rend `null` au lieu de figer si le natif est muet |
+| `js/scan/camera.js` | garde `sansChevauchement(onFrame, delaiSecuriteMs=5000)` : sécurité anti-blocage définitif ; `startCamera` demande `exposureMode: continuous` en best effort (contre-jour/lumière) |
+| `js/ui/screen-scan.js` | `<details> Diagnostic` replié : `trames / lus / dernier résultat` — lecture : trames figées → boucle morte ; lus=0 → la caméra ne lit rien ; lus>0 sans OK → logique |
+| `css/app.css` (écran uniquement) | styles du bloc diagnostic |
+| `test/scan.test.js` | timeout décodeur muet, sécurité de la garde |
+| `sw.js` | CACHE → `bim-v14` |
+
+**Vérifié** : Node 172/182 (mêmes 10 pré-existants) ; `print.css` intact. **Spec inchangée** : créneaux 07:00/13:00/17:30, 10 Hz, ROI — le midi `[13:00, 17:30)` est couvert par les tests B4/B5 existants.
 
 ### Note d'impression universelle + e-mail du pied — 2026-09-08
 

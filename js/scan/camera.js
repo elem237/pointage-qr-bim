@@ -11,6 +11,16 @@ export async function startCamera(videoEl) {
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
   });
+  // Best effort : exposition continue si l'appareil la propose —
+  // aide en contre-jour / pleine lumière (scans de l'après-midi).
+  try {
+    const track = stream.getVideoTracks()[0];
+    const caps = track && track.getCapabilities ? track.getCapabilities() : null;
+    if (caps && Array.isArray(caps.exposureMode) && caps.exposureMode.includes('continuous')) {
+      await track.applyConstraints({ advanced: [{ exposureMode: 'continuous' }] });
+    }
+  } catch {
+  }
   videoEl.srcObject = stream;
   await videoEl.play();
   return stream;
@@ -67,7 +77,7 @@ export function captureROI(video, canvas) {
  * @param {(roi: ImageData) => (void|Promise<any>)} onFrame
  * @returns {(roi: ImageData) => boolean} vrai si la trame est traitée
  */
-export function sansChevauchement(onFrame) {
+export function sansChevauchement(onFrame, delaiSecuriteMs = 5000) {
   let enCours = false;
   return (roi) => {
     if (enCours) return false;
@@ -81,6 +91,9 @@ export function sansChevauchement(onFrame) {
       enCours = true;
       const liberer = () => { enCours = false; };
       r.then(liberer, liberer);
+      // Sécurité : même une promesse qui ne se termine jamais (décodeur
+      // natif bloqué, IndexedDB en souffrance) ne fige pas le scan.
+      setTimeout(liberer, delaiSecuriteMs);
     }
     return true;
   };

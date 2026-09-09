@@ -176,3 +176,27 @@ test('C2 — BarcodeDetector construit 1 seule fois pour N décodages', async ()
     _resetDetector();
   }
 });
+
+test('C2 — decode bloqué (natif muet) rend null après timeout', async () => {
+  globalThis.BarcodeDetector = class {
+    async detect() { return new Promise(() => {}); } // ne se termine jamais
+  };
+  try {
+    _resetDetector();
+    const img = { data: new Uint8ClampedArray(16), width: 2, height: 2 };
+    const t0 = Date.now();
+    assertEq(await decode(img, 30), null, 'timeout → null');
+    assert(Date.now() - t0 < 1000, 'rend la main vite');
+  } finally {
+    delete globalThis.BarcodeDetector;
+    _resetDetector();
+  }
+});
+
+test('Garde — promesse qui ne se termine jamais : sécurité libère', async () => {
+  const garde = sansChevauchement(() => new Promise(() => {}), 20);
+  assertEq(garde(null), true);
+  assertEq(garde(null), false, 'bloqué juste après');
+  await new Promise(res => setTimeout(res, 50));
+  assertEq(garde(null), true, 'libéré par la sécurité');
+});

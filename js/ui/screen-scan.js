@@ -14,6 +14,12 @@ import { getConfig } from '../config.js';
 
 const H_MAP = new Map();
 
+/* Compteurs de diagnostic embarqué (incident « scan muet ») :
+ * trames = images traitées, lus = QR décodés (valides ou non).
+ * trames qui n'augmentent pas → boucle figée ; lus = 0 → la caméra
+ * ne lit rien (lumière, flou, objectif) ; lus > 0 sans OK → logique. */
+const STATS = { trames: 0, lus: 0, dernier: '—' };
+
 /* ── Helpers ── */
 
 export function formatTau(tau) {
@@ -68,6 +74,10 @@ function template() {
   <div id="scan-result">
     <div id="scan-result-inner">Présentez un badge</div>
   </div>
+  <details id="scan-diag">
+    <summary>Diagnostic</summary>
+    <div id="scan-diag-body">trames : 0 · lus : 0 · —</div>
+  </details>
 </div>`;
 }
 
@@ -181,9 +191,25 @@ export function renderEtatPanel(container, result, si, tau, participant) {
 /* ── Capture du payload décodé pour enrichir DEJA_POINTE ── */
 
 let _lastDecodedPayload = null;
+let _dernierDiag = 0;
+
+function heureCourte(t) {
+  const d = new Date(t);
+  const p2 = (n) => String(n).padStart(2, '0');
+  return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+}
+
+function majDiag(container, t, force) {
+  const el = container.querySelector('#scan-diag-body');
+  if (!el) return;
+  if (!force && t - _dernierDiag < 1000) return;
+  _dernierDiag = t;
+  el.textContent = `trames : ${STATS.trames} · lus : ${STATS.lus} · ${STATS.dernier}`;
+}
 
 async function _decodeTrack(img) {
   _lastDecodedPayload = await decode(img);
+  if (_lastDecodedPayload !== null) STATS.lus++;
   return _lastDecodedPayload;
 }
 
@@ -199,6 +225,10 @@ function participantDePayload(payload) {
 
 export async function screenScan(container, store) {
   container.innerHTML = template();
+  STATS.trames = 0;
+  STATS.lus = 0;
+  STATS.dernier = '—';
+  _dernierDiag = 0;
   const video = container.querySelector('#camera-feed');
   const canvas = container.querySelector('#roi-canvas');
   const panel = container.querySelector('#scan-result');
@@ -284,11 +314,19 @@ export async function screenScan(container, store) {
         const ov = container.querySelector('.sel-btn.active').dataset.val;
         const t = Date.now();
         _derniereT = t;
+        STATS.trames++;
 
         const si = slotInfo(t, ov);
         const result = await Scan(roi, t, ov, store, H_MAP, _decodeTrack);
 
-        if (result.resultat === 'RIEN') return;
+        if (result.resultat === 'RIEN') {
+          majDiag(container, t, false);
+          return;
+        }
+        STATS.dernier = `${heureCourte(t)} ${result.resultat}` +
+          (result.code ? `/${result.code}` : '') +
+          (_lastDecodedPayload ? ` ${_lastDecodedPayload.slice(0, 12)}` : '');
+        majDiag(container, t, true);
 
         /* enrichir DEJA_POINTE avec le participant via payload capturé */
         let participant = result.participant || null;
