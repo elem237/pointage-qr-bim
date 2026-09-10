@@ -496,6 +496,10 @@ Les 10 échecs Node restants venaient de dépendances navigateur (`ImageData`, `
 
 **Vérifié** : syntaxe OK, Node 173/183 (mêmes 10 pré-existants), `print.css` intact. **Lecture Diagnostic v16** : `0x0` dans les dims = caméra sans image (relancer) ; trames qui montent + lus 0 = lumière/mise au point.
 
+### Torche pour fins de journée — 2026-09-08
+
+Scans de 17h10 en lumière déclinante : bouton **« Lampe »** en haut à droite de la caméra (visible uniquement si l'appareil supporte le torch, état ON/OFF, extinction auto à la pause). Best effort avec repli silencieux. CACHE → `bim-v17`. À tester sur appareil (pas de navigateur ici).
+
 ### Note d'impression universelle + e-mail du pied — 2026-09-08
 
 La note « Impression depuis iPhone : rendu à 88 % » est remplacée par une consigne valable sur **tout appareil** : « Impression : marges « Aucune », échelle 100 %, arrière-plans activés » (`screen-report.js`, test U3.6, `INTERFACE.md` §6). CACHE → `bim-v13`.
@@ -508,6 +512,39 @@ E-mail du pied de rapport : `greeninnovatives46@gmail.com` → `infos@green-inno
 
 ---
 
+### Scan `midi` muet après la pause déjeuner — bim-v18 — 2026-09-10
+
+**Symptôme (utilisateur)** : « toujours impossible de scanner à partir de 13h pour le compte du pointage de midi ». Le matin fonctionne, l'après-midi non.
+
+**Ce que ce n'est PAS** : la logique des créneaux. `slotDe(t)` renvoie bien `midi` dès 13:00 (comparaison de chaînes `"HH:MM"` correcte, fenêtres continues `[13:00, 17:30)`), et `store.reg` accepte n'importe quelle clé `midi`. Vérifié par relecture + `slots.test.js` B4/B5.
+
+**Cause réelle** — copier-coller raté introduit au commit `6851072` (bim-v14, « anti-blocage scan ») dans `js/ui/screen-scan.js` :
+le bloc qui **enregistre l'écouteur `visibilitychange`** (+ le câblage du bouton « Tester le décodeur ») s'était retrouvé imbriqué **à l'intérieur** de la branche `else if (!stream && ouvert)` de `onVisibilite`. L'écouteur ne pouvait donc être posé que depuis `onVisibilite` lui-même, jamais appelé faute d'écouteur → **la pause/reprise en arrière-plan était du code mort** depuis bim-v14.
+
+Conséquence en salle : à la pause déjeuner (téléphone verrouillé / app en arrière-plan 30-60 min), l'OS tue le flux caméra. Rien ne le relâchait proprement ni ne le ré-acquérait au retour. La reprise ne tenait qu'aux évènements `ended` / `mute` (peu fiables en PWA iOS) : sinon vidéo figée, boucle de scan tournant dans le vide, **silence total** tout l'après-midi. Effet de bord : le bouton « Tester le décodeur » (bim-v15) était câblé dans le même bloc mort — il n'a jamais rien fait (ce n'était pas « pas encore déployé » comme supposé le 08/09).
+
+**Correctif (bim-v18)** :
+
+| Fichier | Modification |
+|---|---|
+| `js/ui/screen-scan.js` | `onVisibilite` dé-imbriqué : `hidden` → `suspendre()`, retour → `demarrerScan()`. Écouteur `visibilitychange` + câblage bouton test remontés au niveau racine de `screenScan`. `demarrerScan()` rendu **ré-entrant** (`_demarrageEnCours`) + nettoie un flux mort en entrée + abandonne (stopCamera) si la vue a été quittée/cachée pendant `getUserMedia` |
+| `js/main.js` | `montrerScreen` : `Promise.resolve(_screenCtrl)` avant `arreterScan()` — `screenScan` est `async`, `_screenCtrl` était une Promise et `arreterScan()` n'était jamais appelé en quittant le Scan (caméra allumée en fond) |
+| `sw.js` | `CACHE` → `bim-v18` |
+
+**Non touché** : `js/model/`, `js/db/`, `js/scan/`, `print.css`. Spec créneaux inchangée.
+
+**Vérifié** : équilibrage des accolades OK ; modules purs de `screen-scan.js` (exports `formatTau`, `updateCounter`, `messagePourResultat`, `autotestDecodeur`, …) inchangés → Node non impacté. **À tester sur appareil** : verrouiller le téléphone ~45 min pendant la « pause déjeuner », revenir, scanner un badge → doit pointer `midi` sans intervention (ou après un toucher du panneau). Idem changement d'app. Android + iPhone.
+
+---
+
+## Correction — site de production — 2026-09-10
+
+Le site de production est **`https://pointage-qr-bim.netlify.app/`** (et non `effulgent-sprite-fbf8eb.netlify.app`, mentionné dans les sections des 21-22/07). C'est l'URL à utiliser pour la recette et les déploiements. Rappel : pas d'auto-deploy, **Trigger + Publish** manuels dans Netlify, et bumper `CACHE` dans `sw.js` à chaque fois.
+
+---
+
 ## Prochaine étape
 
-Aucune sur le hors-ligne — validé de bout en bout (code, CDN, iPhone physique). Recette finale avec le client sur `https://effulgent-sprite-fbf8eb.netlify.app/`.
+1. Déployer **bim-v18** (Trigger + Publish sur `pointage-qr-bim.netlify.app`) et re-tester le scan `midi` après pause déjeuner sur Android **et** iPhone.
+2. Impression réelle du rapport à l'échelle 100 % — jamais mesurée sur imprimante physique.
+3. Recette finale avec le client sur `https://pointage-qr-bim.netlify.app/`.

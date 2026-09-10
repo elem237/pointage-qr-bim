@@ -66,6 +66,7 @@ function template() {
       <div class="ret-c ret-bl"></div>
       <div class="ret-c ret-br"></div>
     </div>
+    <button id="scan-torch" type="button" hidden>Lampe</button>
     <div id="scan-selector">
       <button class="sel-btn active" data-val="auto">Auto</button>
       <button class="sel-btn" data-val="matin">Matin</button>
@@ -290,10 +291,46 @@ export async function screenScan(container, store) {
   let _derniereT = 0;
   let visEcoute = false;
   let ouvert = true;
+  let torchOn = false;
+
+  async function appliquerTorche() {
+    try {
+      const track = stream && stream.getVideoTracks()[0];
+      if (!track || !track.applyConstraints) return false;
+      await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function configurerTorche() {
+    const btn = container.querySelector('#scan-torch');
+    if (!btn) return;
+    torchOn = false;
+    btn.classList.remove('on');
+    btn.textContent = 'Lampe';
+    let supportee = false;
+    try {
+      const track = stream && stream.getVideoTracks()[0];
+      const caps = track && track.getCapabilities ? track.getCapabilities() : null;
+      supportee = !!(caps && caps.torch);
+    } catch {
+      supportee = false;
+    }
+    btn.hidden = !supportee;
+    btn.onclick = async () => {
+      torchOn = !torchOn;
+      if (!await appliquerTorche()) torchOn = !torchOn;
+      btn.classList.toggle('on', torchOn);
+      btn.textContent = torchOn ? 'Lampe : ON' : 'Lampe';
+    };
+  }
 
   async function suspendre() {
     // Pause sans toucher au panneau : libère la caméra (batterie,
     // révocation OS en arrière-plan) en gardant l'UI en place.
+    torchOn = false;
     if (controller) { controller.stop(); controller = null; }
     if (stream) { stopCamera(stream); stream = null; }
   }
@@ -312,8 +349,16 @@ export async function screenScan(container, store) {
   function onVisibilite() {
     if (typeof document === 'undefined') return;
     if (document.hidden) {
+      // Mise en arrière-plan (verrouillage, changement d'app, pause
+      // déjeuner) : on relâche proprement la caméra…
       suspendre();
     } else if (!stream && ouvert) {
+      // …et on la ré-acquiert au retour. Sans ça, après la pause de midi
+      // l'OS avait tué le flux et le scan restait muet tout l'après-midi.
+      demarrerScan();
+    }
+  }
+
   if (typeof document !== 'undefined' && !visEcoute) {
     visEcoute = true;
     document.addEventListener('visibilitychange', onVisibilite);
@@ -329,10 +374,6 @@ export async function screenScan(container, store) {
         ? `Décodeur OK (${r.lu}) — un échec live vient de la caméra/lumière.`
         : `Décodeur HS (attendu ${r.attendu || '?'}, lu ${r.lu ?? r.erreur}) — utilisez le pointage manuel.`;
     });
-  }
-
-  demarrerScan();
-    }
   }
 
   function cameraInterrompue(message) {
@@ -359,14 +400,31 @@ export async function screenScan(container, store) {
     });
   }
 
+  let _demarrageEnCours = false;
   async function demarrerScan() {
+    // Ré-entrant : le retour d'arrière-plan peut relancer pendant qu'un
+    // getUserMedia précédent est encore en vol. Deux acquisitions
+    // simultanées bloquent la caméra sur Android.
+    if (_demarrageEnCours) return;
+    _demarrageEnCours = true;
     inner.textContent = 'Démarrage de la caméra…';
     panel.style.background = '#555';
+
+    // Flux précédent éventuellement mort (retour d'arrière-plan) : on nettoie.
+    if (controller) { controller.stop(); controller = null; }
+    if (stream) { stopCamera(stream); stream = null; }
 
     const audioOk = await initAudio();
 
     try {
-      stream = await startCamera(video);
+      const s = await startCamera(video);
+      // La vue a pu être quittée / cachée pendant l'attente de getUserMedia :
+      // ne pas laisser une caméra ouverte en arrière-plan (batterie, 3 jours).
+      if (!ouvert || (typeof document !== 'undefined' && document.hidden)) {
+        stopCamera(s);
+        return;
+      }
+      stream = s;
       // Interruption involontaire (track 'ended') → message + relance,
       // jamais de vidéo noire muette. L'arrêt volontaire (suspendre /
       // arreterScan) met stream à null AVANT : le rappel est ignoré.
@@ -374,12 +432,12 @@ export async function screenScan(container, store) {
       // Source coupée sans 'ended' (mute OS) → même traitement après 2 s.
       onStreamMute(stream, () => { if (stream !== null) cameraInterrompue('Caméra coupée — touchez ici pour relancer'); });
       if (!await attendreImage(video)) {
-        const s = stream;
         stream = null;
-        if (s) stopCamera(s);
+        stopCamera(s);
         cameraInterrompue('Caméra sans image — touchez ici pour relancer');
         return;
       }
+      configurerTorche();
       _derniereT = Date.now();
       updateCounter(container, store, _derniereT, 'auto');
       inner.innerHTML = 'Présentez un badge';
@@ -425,6 +483,8 @@ export async function screenScan(container, store) {
         inner.textContent = 'Caméra inaccessible';
       }
       try { feedback({ resultat: 'ERREUR', code: 'inconnu' }); } catch (_) {}
+    } finally {
+      _demarrageEnCours = false;
     }
   }
 

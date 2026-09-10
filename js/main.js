@@ -32,8 +32,14 @@ function autoModeTest() {
 
 function montrerScreen(nom) {
   if (_currentScreen === nom) return;
-  if (_screenCtrl && typeof _screenCtrl.arreterScan === 'function') {
-    _screenCtrl.arreterScan();
+  // screenScan est async → _screenCtrl peut être une Promise. Sans
+  // Promise.resolve, arreterScan() n'était jamais appelé en quittant le
+  // Scan : la caméra restait allumée en fond (batterie, "caméra occupée"
+  // au retour).
+  if (_screenCtrl) {
+    Promise.resolve(_screenCtrl).then((c) => {
+      if (c && typeof c.arreterScan === 'function') c.arreterScan();
+    });
   }
   _currentScreen = nom;
   const app = document.getElementById('app');

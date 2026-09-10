@@ -8,11 +8,12 @@
 
 ## Le projet en 6 lignes
 
-PWA de pointage par QR pour une formation **BIM** de GREEN INNOVATIVE'S, à **DOUALA**, les **4, 5 et 6 août 2026**, pour **16 participants**.
+PWA de pointage par QR pour une formation **BIM** de GREEN INNOVATIVE'S, à **DOUALA**, pour **13 participants** (liste révisée par le client le 8 sept. 2026 — les n° 14-15-16 retirés ; `EFFECTIFS = PARTICIPANTS.length`, jamais un nombre en dur).
 Scanner un badge → identifier → marquer présent sur le bon créneau → ding → à la fin, générer un PDF **strictement identique** à la liste de présence du client.
 
 **Contrainte reine : aucun réseau en salle.** Tout est local, hors-ligne, dans le téléphone.
-**Échéance : 4 août.** Le risque du projet n'est plus la conception — elle est finie et sur-travaillée. Le risque, c'est le code non écrit et la caméra non testée sur les téléphones réels.
+**Dates :** la formation, initialement prévue les 4-5-6 août 2026, a été **reportée par le client à une date non fixée**. `DEFAULTS.DATES = []` : les 3 dates se saisissent dans l'écran Réglages et sont persistées en IndexedDB. Tant qu'elles sont vides, l'app ouvre Réglages au boot (voir « Garde-fou dates »).
+**Le risque du projet :** la conception est finie et sur-travaillée. Ce qui reste fragile, c'est le **scan sur téléphones réels** (Android surtout : fluidité, reprise après la pause déjeuner, lumière déclinante — cf. `ETAT.md`, itérations bim-v11→v18) et **l'impression du rapport à l'échelle 100 %**, jamais mesurée sur une vraie imprimante.
 
 ---
 
@@ -41,7 +42,8 @@ Hiérarchie : CLAUDE.md > SKILL.md > AJOUT.md > INTERFACE.md > SPECIFICATIONS.md
 - **`SPECIFICATIONS.md` §10 « Rapport PDF »** → entièrement remplacé par `SKILL.md`.
   Ses valeurs (« ~96 mm », « ~14 mm », « marges 15 mm », « 180 mm utiles ») sont **fausses**, et la colonne **« N° » qu'il décrit n'existe plus** : le client a mis à jour son `.docx` (plus de N°, et les colonnes Jour sont déjà divisées en Mt/Md).
 - **`SPECIFICATIONS.md` §3, heures `06:00 / 12:30 / 19:00`** → remplacées par `AJOUT.md` v2 : **`07:00 / 13:00 / 17:30`**.
-- **`SPECIFICATIONS.md` §3, « DATES non modifiable »** → **faux**. Les badges n'encodent aucune date (`BIM26-0NN-XX`). `DATES` **doit** être modifiable, sinon aucun test n'est possible avant le 4 août.
+- **`SPECIFICATIONS.md` §3, « DATES non modifiable »** → **faux**. Les badges n'encodent aucune date (`BIM26-0NN-XX`). `DATES` **doit** être modifiable. Depuis le report de la formation : `DEFAULTS.DATES = []`, saisie + persistance en Réglages (`store.setReglages`), pas de dates par défaut.
+- **`SPECIFICATIONS.md` §4.1 + `FORMALISATION_MATHEMATIQUE_v2.md`, « N = 16 »** → **13** depuis le 8 sept. 2026. `|K| = 78` pointages, 52 absences fictives possibles si la garde Prop. 8.2 casse.
 
 ---
 
@@ -81,7 +83,8 @@ Leur échec **ne se voit pas en salle** et **ne se rattrape pas après**. Elles 
 | **Non-résurrection** (Erratum 1) | `js/model/lattice.js` | un pointage annulé revient à la fusion |
 | **Re-pointage après annulation** (Th. 6.12) | `js/model/lattice.js` | le treillis se bloque après une annulation |
 | **Idempotence de `reg`** (Th. 6.7) | `js/db/store.js` | doublons. ⚠️ **indépendante de l'anti-rebond** — tester les deux séparément |
-| **Pas d'absence future** (Prop. 8.2) | `js/model/report.js` | le PDF du J1 affiche **64 absences fictives** pour J2/J3 |
+| **Pas d'absence future** (Prop. 8.2) | `js/model/report.js` | le PDF du J1 affiche **52 absences fictives** (13 × J2 + J3) |
+| **Reprise caméra après arrière-plan** (`visibilitychange`) | `js/ui/screen-scan.js` | après la pause déjeuner, le scan de l'après-midi (`midi`) reste **muet** — l'OS a tué le flux, rien ne le ré-acquiert (bug bim-v14→v17, corrigé v18) |
 | **Précache complet** (Inv. 9.1) | `sw.js` | l'app semble installée puis meurt en salle, sans réseau |
 | **Pauses non modélisées** (`AJOUT.md`) | `js/model/slots.js` | le retardataire de 10h45 est refusé, sans recours |
 | **Ordre des colonnes** (`AJOUT.md` §6) | `js/ui/screen-report.js` | les présences glissent d'une colonne, **le PDF reste plausible** |
@@ -99,9 +102,9 @@ Chacun a déjà été commis sur ce projet.
 | « Le tableau déborde de la marge gauche, je corrige » | **Non.** `tblInd = -856 twips`. Il commence à **9.91 mm**, c'est voulu. |
 | « Je modélise proprement les pauses café et déjeuner » | **Non.** Les fenêtres sont **continues**. 10h45 → `Mt`. 13h50 → `Md`. |
 | « `generation` et `device` semblent inutiles, je simplifie » | **Non.** `generation` porte le re-pointage ; `device` rend la fusion déterministe. |
-| « `crypto.subtle` est async, je rends `valider()` async » | **Non.** L'ordre des gardes est `format → inconnu → checksum` : `checksum` n'est jamais appelée hors des 16 ids, la Map pré-calculée suffit, tout reste **synchrone**. |
+| « `crypto.subtle` est async, je rends `valider()` async » | **Non.** L'ordre des gardes est `format → inconnu → checksum` : `checksum` n'est jamais appelée hors des 13 ids, la Map pré-calculée suffit, tout reste **synchrone**. |
 | « J'écris `Mt`/`Md` dans le HTML, c'est plus lisible » | **Non.** Deux ordres indépendants = présences décalées, PDF plausible, personne ne le voit. `tousLesSlots()` est la source unique. |
-| « J'ajoute React, ce sera plus propre » | **Non.** 16 participants, 96 pointages. Un `querySelector` suffit. |
+| « J'ajoute React, ce sera plus propre » | **Non.** 13 participants, 78 pointages. Un `querySelector` suffit. |
 | « J'ajoute un bloc de statistiques au PDF » | **Non.** Décision client : le document, rien que le document. |
 | « Je passe la page en paysage, ce sera plus lisible » | **Non.** Mesuré : le portrait passe avec le bi-ligne à 7 pt. |
 | « `Md` = midi = 12h00 » | **Non.** `Md` = demi-journée d'après-déjeuner, **14:00 → 16:30**. Un scan à 15h20 est un `Md`. |
@@ -151,17 +154,29 @@ Test permanent : `grep -rn "'Mt'\|'Md'" js/model/ js/db/ js/scan/` → **aucun r
 - Le ding sur **iPhone** (`AudioContext` doit naître dans un gestionnaire d'interaction — sinon silence total, sans erreur)
 - Badges imprimés, scannés à 30 cm **sous les néons de la salle**
 - ⚠️ **La mise à l'échelle à l'impression depuis mobile** — *le risque le plus sérieux du projet*. Si Safari applique un « ajuster à la page », les 8.54 mm mesurés s'effondrent et toute la métrologie de `SKILL.md` avec. **Tester tôt.** Plan B : exporter le JSON, imprimer depuis un ordinateur.
+- ⚠️ **Reprise du scan après la pause déjeuner** : verrouiller le téléphone / passer l'app en arrière-plan ~45 min, revenir → le scan `midi` doit repartir seul (ou sur un toucher du panneau rouge), jamais rester figé en silence. C'est le scénario qui a déjà cassé le pointage d'un après-midi entier.
 - Fusion entre deux téléphones physiques
 - Autonomie sur 3 jours
 
 ---
 
-## Garde-fou « mode test »
+## Garde-fou « dates »
 
-`DATES` est modifiable en Réglages (sans quoi rien n'est testable avant le 4 août). Changer `DATES` **orpheline les pointages** (la date est dans la clé) : acceptable en recette, jamais pendant la formation.
+`DEFAULTS.DATES = []`. Les 3 dates de formation se saisissent dans l'écran Réglages et sont persistées en IndexedDB (`store.setReglages` → `meta.reglages`). Changer `DATES` **orpheline les pointages** (la date est dans la clé) : acceptable en recette, **jamais pendant la formation**.
 
-> Un **bandeau rouge permanent** doit s'afficher tant que `DATES ≠ 4-6 août 2026`.
-> **Arriver le 4 août avec des dates de test, c'est perdre la matinée.**
+> Tant que `DATES` est vide, `js/main.js` **ouvre l'écran Réglages au boot** au lieu du Scan. C'est le seul garde-fou : le **bandeau rouge « mode test » a été retiré** quand la formation a été reportée et les dates généralisées (voir `ETAT.md`, 21/07/2026).
+> `main.js:autoModeTest()` élargit les créneaux (`00:00 / 12:00 / 23:59`) **uniquement** quand la date du jour n'est pas dans `DATES` — pour pouvoir tester hors des vraies dates. Le jour J, avec les bonnes dates saisies, il ne fait rien et les créneaux réels `07:00 / 13:00 / 17:30` s'appliquent.
+
+---
+
+## Déploiement
+
+Site de production : **https://pointage-qr-bim.netlify.app/**.
+
+- `publish = "."`, aucun build.
+- **Pas de déploiement automatique sur `git push`.** Après chaque changement : dans le dashboard Netlify, **Trigger deploy** *puis* **Publish deploy** sur le bon build — sinon la prod reste figée sur l'ancien.
+- **Incrémenter `CACHE` dans `sw.js` (`bim-vN`) à CHAQUE déploiement.** Sans ça, les téléphones gardent l'ancien précache et l'app peut ne plus démarrer hors-ligne. `netlify.toml` sert `sw.js` en `no-cache` (la règle `/sw.js` doit rester **après** la règle générique `*.js`).
+- Après déploiement : rejouer le protocole hors-ligne (`CORRECTIF.md` §3) sur un iPhone physique.
 
 ---
 
