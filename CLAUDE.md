@@ -174,9 +174,9 @@ Test permanent : `grep -rn "'Mt'\|'Md'" js/model/ js/db/ js/scan/` → **aucun r
 Site de production : **https://pointage-qr-bim.netlify.app/**.
 
 - `publish = "."`, aucun build.
-- **Pas de déploiement automatique sur `git push`.** Après chaque changement : dans le dashboard Netlify, **Trigger deploy** *puis* **Publish deploy** sur le bon build — sinon la prod reste figée sur l'ancien.
+- **Déploiement automatique sur `git push` vers `origin/master`** (confirmé le 10/09/2026). L'ancienne consigne « Trigger + Publish manuels » concernait le site `effulgent-sprite`, abandonné.
 - **Incrémenter `CACHE` dans `sw.js` (`bim-vN`) à CHAQUE déploiement.** Sans ça, les téléphones gardent l'ancien précache et l'app peut ne plus démarrer hors-ligne. `netlify.toml` sert `sw.js` en `no-cache` (la règle `/sw.js` doit rester **après** la règle générique `*.js`).
-- Après déploiement : rejouer le protocole hors-ligne (`CORRECTIF.md` §3) sur un iPhone physique.
+- Après déploiement : vérifier en ligne (`curl .../sw.js` → bon `CACHE`), puis rejouer le protocole hors-ligne (`CORRECTIF.md` §3) sur un iPhone physique.
 
 ---
 

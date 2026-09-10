@@ -533,18 +533,27 @@ Conséquence en salle : à la pause déjeuner (téléphone verrouillé / app en 
 
 **Non touché** : `js/model/`, `js/db/`, `js/scan/`, `print.css`. Spec créneaux inchangée.
 
-**Vérifié** : équilibrage des accolades OK ; modules purs de `screen-scan.js` (exports `formatTau`, `updateCounter`, `messagePourResultat`, `autotestDecodeur`, …) inchangés → Node non impacté. **À tester sur appareil** : verrouiller le téléphone ~45 min pendant la « pause déjeuner », revenir, scanner un badge → doit pointer `midi` sans intervention (ou après un toucher du panneau). Idem changement d'app. Android + iPhone.
+**Vérifié (statique)** : équilibrage des accolades OK ; modules purs de `screen-scan.js` (exports `formatTau`, `updateCounter`, `messagePourResultat`, `autotestDecodeur`, …) inchangés → Node non impacté. **À tester sur appareil** : verrouiller le téléphone ~45 min pendant la « pause déjeuner », revenir, scanner un badge → doit pointer `midi` sans intervention (ou après un toucher du panneau). Idem changement d'app. Android + iPhone. Tester aussi que le bouton « Tester le décodeur » répond enfin.
+
+**Déployé — 2026-09-10** : commit `2e7bd80` poussé sur `origin/master`, **déploiement automatique** de `pointage-qr-bim.netlify.app` (ce site, contrairement à l'ancien `effulgent-sprite`, se déploie sur `git push`). Vérifié en ligne par `curl` juste après :
+- `sw.js` → `const CACHE = 'bim-v18';`, en-tête `cache-control: no-cache`, `age: 0`
+- `js/ui/screen-scan.js` en ligne contient bien `_demarrageEnCours` et l'écouteur `visibilitychange` au niveau racine
+- `js/main.js` en ligne contient `Promise.resolve(_screenCtrl)`
+- `/`, `/index.html`, `/css/app.css`, `/manifest.webmanifest`, `/vendor/jsqr.js` → HTTP 200
+- `AGENTS.md` en ligne = version réduite
+
+Reste : ouvrir l'app sur les téléphones (le SW doit passer de `bim-v16/v17` à `bim-v18` au prochain lancement en réseau), puis faire les tests appareil ci-dessus.
 
 ---
 
 ## Correction — site de production — 2026-09-10
 
-Le site de production est **`https://pointage-qr-bim.netlify.app/`** (et non `effulgent-sprite-fbf8eb.netlify.app`, mentionné dans les sections des 21-22/07). C'est l'URL à utiliser pour la recette et les déploiements. Rappel : pas d'auto-deploy, **Trigger + Publish** manuels dans Netlify, et bumper `CACHE` dans `sw.js` à chaque fois.
+Le site de production est **`https://pointage-qr-bim.netlify.app/`** (et non `effulgent-sprite-fbf8eb.netlify.app`, mentionné dans les sections des 21-22/07). C'est l'URL à utiliser pour la recette et les déploiements. **Ce site se déploie automatiquement sur `git push`** (confirmé le 10/09 : `bim-v18` en ligne quelques minutes après le push, sans action manuelle) — l'ancienne consigne « Trigger + Publish manuels » s'appliquait à `effulgent-sprite`. Toujours bumper `CACHE` dans `sw.js` à chaque déploiement.
 
 ---
 
 ## Prochaine étape
 
-1. Déployer **bim-v18** (Trigger + Publish sur `pointage-qr-bim.netlify.app`) et re-tester le scan `midi` après pause déjeuner sur Android **et** iPhone.
+1. **bim-v18 déployé.** Ouvrir l'app sur les téléphones de la salle pour forcer la mise à jour du SW, puis re-tester le scan `midi` après pause déjeuner sur Android **et** iPhone (+ bouton « Tester le décodeur »).
 2. Impression réelle du rapport à l'échelle 100 % — jamais mesurée sur imprimante physique.
 3. Recette finale avec le client sur `https://pointage-qr-bim.netlify.app/`.
