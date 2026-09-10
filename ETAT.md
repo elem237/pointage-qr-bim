@@ -552,8 +552,34 @@ Le site de production est **`https://pointage-qr-bim.netlify.app/`** (et non `ef
 
 ---
 
+### 🔴 Aucun scan ne passe depuis le 8 sept. — `captureROI` jamais appelé — bim-v19 — 2026-09-10
+
+**Symptôme (utilisateur)** : « le seul jour que j'ai scanné c'était le 08 le matin, après ça plus aucun scan ne passe ». Bonne lumière, caméra fonctionnelle. **« Tester le décodeur » répond OK** (affiche un matricule `BIM26-001-…` — le QR de test que l'app génère elle-même) mais le scan live ne décode jamais rien.
+
+**Cause** — régression introduite au commit `cf8c408` (bim-v11, « fluidité scan »), passée inaperçue pendant tout le travail v11→v18 :
+
+`lancerBoucle` faisait `const garde = sansChevauchement(onFrame)` puis appelait `garde(() => { const roi = captureROI(...); return onFrame(roi); })`. Mais `sansChevauchement` **exécute la fonction qu'il a capturée** (`onFrame`), pas son argument. Le thunk passé à `garde(...)` n'était **jamais invoqué** → `captureROI` jamais appelé → le vrai `onFrame` (callback de scan) recevait **une fonction** à la place de l'`ImageData` → `decode()` → `RIEN` à chaque trame, **sur tous les appareils**.
+
+Le matin du 8 fonctionnait car c'était encore bim-v9/v10 (`garde(roi)` passait les vrais pixels). Le test décodeur marche car `autotestDecodeur()` appelle `decode()` en direct avec une vraie `ImageData`, sans passer par `lancerBoucle`.
+
+**Correctif (bim-v19)** :
+
+| Fichier | Modification |
+|---|---|
+| `js/scan/camera.js` | `lancerBoucle` passe le thunk capture+décodage **à** `sansChevauchement` (plus `onFrame`) et appelle `garde()`. `sansChevauchement(onFrame → tache)` : param renommé, `return () => …` sans argument, `r = tache()` — clarifie que c'est un thunk. `ROI_DECODE_MAX` **240 → 512** : le plafond 240 (bim-v11) avait été réglé alors que la capture était cassée (jamais validé) ; 512 restaure la marge de décodage des capteurs 720p/1080p qui marchaient le 8. |
+| `test/scan.test.js` | Nouveau test régression `lancerBoucle` (stub `requestAnimationFrame`) : `onFrame` doit recevoir une `ImageData` (`.width` = 240), jamais une fonction. Tests ROI mis à jour pour le plafond 512 (4K capé, 720p non capé). |
+| `sw.js` | `CACHE` → `bim-v19` |
+
+**Non touché** : `js/model/`, `js/db/`, `print.css`. `js/ui/`.
+
+**Vérifié (statique, pas de Node/navigateur dans l'env)** : accolades OK ; `pipeline.test.js` (teste `Scan` en direct) non impacté ; `sansChevauchement` déjà appelé avec un thunk par les tests existants → compatibles. **À tester sur appareil dès déploiement** : scanner un badge réel → doit pointer immédiatement (ding + panneau vert). Si ça marche enfin, revalider aussi le scénario pause-déjeuner (bim-v18) et la torche (bim-v17).
+
+**Leçon** : tout le travail v10→v18 (« fluidité », « anti-blocage », « scan muet », diagnostic embarqué, autotest, torche) diagnostiquait les **symptômes** de cette seule régression de câblage sans jamais la trouver. `lancerBoucle` n'avait aucun test (navigateur-only supposé) — il en a un maintenant.
+
+---
+
 ## Prochaine étape
 
-1. **bim-v18 déployé.** Ouvrir l'app sur les téléphones de la salle pour forcer la mise à jour du SW, puis re-tester le scan `midi` après pause déjeuner sur Android **et** iPhone (+ bouton « Tester le décodeur »).
-2. Impression réelle du rapport à l'échelle 100 % — jamais mesurée sur imprimante physique.
+1. **bim-v19 déployé** (auto sur push). Ouvrir l'app sur les téléphones en réseau pour forcer la maj SW, puis **tester un scan réel** : c'est la vérification qui prime sur tout le reste.
+2. Si le scan marche : revalider pause-déjeuner (bim-v18) + torche (bim-v17) + impression rapport 100 %.
 3. Recette finale avec le client sur `https://pointage-qr-bim.netlify.app/`.

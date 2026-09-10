@@ -84,13 +84,23 @@ function fauxCanvas() {
 
 /* ── ROI plafonnée (fluidité Android) : testable sans DOM via mocks ── */
 
-test('ROI — grande vidéo 1280×720 : décodage plafonné à 240 px', async () => {
+test('ROI — capteur 4K (3840×2160) : décodage plafonné à ROI_DECODE_MAX', async () => {
   const { captureROI, ROI_DECODE_MAX } = await import('../js/scan/camera.js');
   const canvas = fauxCanvas();
-  captureROI({ videoWidth: 1280, videoHeight: 720 }, canvas);
+  // min(3840,2160)*0.5 = 1080 > plafond → capé
+  captureROI({ videoWidth: 3840, videoHeight: 2160 }, canvas);
   assertEq(canvas.width, ROI_DECODE_MAX);
   assertEq(canvas.height, ROI_DECODE_MAX);
   assertEq(canvas.appels.get[0][0], ROI_DECODE_MAX);
+});
+
+test('ROI — capteur 1280×720 : sous le plafond, résolution conservée (360 px)', async () => {
+  const { captureROI } = await import('../js/scan/camera.js');
+  const canvas = fauxCanvas();
+  // min(1280,720)*0.5 = 360 ≤ plafond → pas de réduction
+  captureROI({ videoWidth: 1280, videoHeight: 720 }, canvas);
+  assertEq(canvas.width, 360);
+  assertEq(canvas.height, 360);
 });
 
 test('ROI — petite vidéo 320×240 : taille réelle conservée (120 px)', async () => {
@@ -163,6 +173,28 @@ test('Garde — une exception synchrone ne bloque pas la boucle', () => {
   const garde = sansChevauchement(() => { throw new Error('sync'); });
   assertEq(garde(null), true);
   assertEq(garde(null), true);
+});
+
+test('lancerBoucle — onFrame reçoit l’ImageData de captureROI, pas une fonction (régression bim-v11)', async () => {
+  const rafOrig = globalThis.requestAnimationFrame;
+  let ticks = 0;
+  globalThis.requestAnimationFrame = (cb) => {
+    if (ticks++ < 3) Promise.resolve().then(() => cb(ticks * 1000));
+    return ticks;
+  };
+  try {
+    const recu = [];
+    const video = { videoWidth: 640, videoHeight: 480 };
+    const ctrl = lancerBoucle(video, fauxCanvas(), (roi) => { recu.push(roi); });
+    await new Promise(res => setTimeout(res, 20));
+    ctrl.stop();
+    assert(recu.length >= 1, 'onFrame appelé au moins une fois');
+    assert(typeof recu[0] !== 'function', 'onFrame ne doit PAS recevoir un thunk');
+    assertEq(recu[0].width, 240, 'ImageData réelle : min(640,480)*0.5 = 240');
+    assertEq(recu[0].height, 240);
+  } finally {
+    globalThis.requestAnimationFrame = rafOrig;
+  }
 });
 
 /* ── Détecteur singleton (fuite mémoire Android) ── */

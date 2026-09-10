@@ -39,15 +39,18 @@ export function stopCamera(stream) {
  * Le canvas n'est redimensionné que si la taille change : réassigner
  * width/height à chaque trame réalloue le buffer et réinitialise
  * le contexte 2D (coût CPU + à-coups sur Android).
- * La ROI décodée est plafonnée à 240 px de côté : un QR version 1
- * (21×21 modules) se décode dès ~4 px/module, et diviser les pixels
- * par ~2–4 divise le coût jsQR d'autant. La RÉGION (carré central
- * × ROI_RATIO) est inchangée — seule la résolution de décodage baisse.
+ * La ROI décodée est plafonnée à ROI_DECODE_MAX px de côté (un QR v1,
+ * 21×21 modules, se décode dès ~4 px/module — inutile de décoder du 1080p).
+ * La RÉGION (carré central × ROI_RATIO) est inchangée — seule la
+ * résolution de décodage baisse.
+ * NB : le plafond 240 (bim-v11) avait été réglé alors que la capture
+ * était cassée (jamais appelée) : jamais validé sur le terrain. Remonté
+ * à 512 pour retrouver la marge de décodage qui fonctionnait le 8 sept.
  * @param {HTMLVideoElement} video
  * @param {HTMLCanvasElement} canvas
- * @returns {ImageData}
+ * @returns {ImageData|null}
  */
-export const ROI_DECODE_MAX = 240;
+export const ROI_DECODE_MAX = 512;
 
 export function captureROI(video, canvas) {
   const cfg = getConfig();
@@ -78,16 +81,18 @@ export function captureROI(video, canvas) {
  * s'empilent (N décodages simultanés), le CPU sature et l'app ralentit
  * jusqu'au gel. Avec la garde : 10 Hz max, jamais de chevauchement —
  * une trame est sautée tant que la précédente n'est pas terminée.
- * @param {(roi: ImageData) => (void|Promise<any>)} onFrame
- * @returns {(roi: ImageData) => boolean} vrai si la trame est traitée
+ * `tache` est APPELÉE (thunk) : y mettre capture + décodage, pour que
+ * la capture aussi soit sautée quand ça rame.
+ * @param {() => (void|Promise<any>)} tache
+ * @returns {() => boolean} vrai si la trame est traitée (tâche lancée)
  */
-export function sansChevauchement(onFrame, delaiSecuriteMs = 5000) {
+export function sansChevauchement(tache, delaiSecuriteMs = 5000) {
   let enCours = false;
-  return (roi) => {
+  return () => {
     if (enCours) return false;
     let r;
     try {
-      r = onFrame(roi);
+      r = tache();
     } catch {
       return true;
     }
@@ -167,7 +172,18 @@ export function onStreamMute(stream, cb, delaiMs = 2000) {
 export function lancerBoucle(video, canvas, onFrame) {
   const cfg = getConfig();
   const interval = 1000 / cfg.FREQ_HZ;
-  const garde = sansChevauchement(onFrame);
+  // La garde enveloppe TOUTE la tâche : capture (getImageData, synchrone et
+  // coûteux — synchro GPU→CPU) + décodage. Tant que la précédente n'est pas
+  // finie, la trame est entièrement sautée, capture comprise.
+  // ⚠️ `sansChevauchement(tache)` EXÉCUTE `tache` — il faut lui passer le
+  // thunk capture+décodage, PAS `onFrame` (bug bim-v11→v18 : captureROI
+  // n'était jamais appelé, le décodeur recevait une fonction au lieu des
+  // pixels → plus aucun scan).
+  const garde = sansChevauchement(() => {
+    const roi = captureROI(video, canvas);
+    if (roi === null) return;
+    return onFrame(roi);
+  });
   let lastTime = 0;
   let running = true;
   let freeze = false;
@@ -180,17 +196,10 @@ export function lancerBoucle(video, canvas, onFrame) {
     }
     if (time - lastTime >= interval) {
       lastTime = time;
+      // try/catch : la boucle est IMMORTELLE — aucune frame vérolée
+      // (caméra coupée, canvas détaché) ne doit arrêter requestAnimationFrame.
       try {
-        // Capture + décodage DANS la garde : quand l'appareil rame, on saute
-        // aussi le getImageData (synchrone, coûteux : synchro GPU→CPU) au lieu
-        // de le payer à chaque tick pour un décodage qui serait ignoré.
-        // Le try/catch rend la boucle IMMORTELLE : aucune frame vérolée
-        // (caméra coupée, canvas détaché) ne doit arrêter requestAnimationFrame.
-        garde(() => {
-          const roi = captureROI(video, canvas);
-          if (roi === null) return;
-          return onFrame(roi);
-        });
+        garde();
       } catch {
       }
     }
