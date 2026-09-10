@@ -204,6 +204,7 @@ La formalisation n'inclut pas ce remplacement. Décision : `.replace(/['']/g, "'
 | Badges QR · impression + scan physique | Les 16 badges scannés et lus correctement. QR version 1-Q lisible sur papier, ~30 cm, éclairage néons. | ✅ FORMAT CONFIRMÉ — tous les badges validés |
 | Rapport PDF · impression réelle (largeurs) | — | ⚠️ EN ATTENTE avant le jour J |
 | iPhone X · mode avion, protocole CORRECTIF.md §3 intégral (install icône → tuer app → relancer avion → Scan/Liste/Rapport) | Tous les points du protocole passés — revalidé 2026-07-22 après correctif `netlify.toml` sur `effulgent-sprite-fbf8eb.netlify.app` | ✅ HORS-LIGNE VALIDÉ (C1) |
+| Scan live d'un badge réel (bim-v19, après fix `captureROI`) | L'utilisateur confirme : le scan fonctionne — 2026-09-10 | ✅ SCAN VALIDÉ (première fois depuis le 8 sept.) |
 | Android Redmi · installation PWA (icône écran d'accueil) | Play Store présent, menu ⋮ ne propose ni « Installer » ni « Ajouter à l'écran d'accueil », même après rechargement + attente + interaction | ⚠️ NON RÉSOLU — probable non-certification Play Protect de l'appareil (fréquent sur unités reflashées/importées). Le manifest, les icônes et le SW sont conformes et vérifiés en ligne (curl) : ce n'est pas un défaut de notre code. Repli : raccourci simple sans mode standalone. Ne pas rouvrir sans nouvel appareil Android à tester. |
 
 ---
@@ -572,7 +573,9 @@ Le matin du 8 fonctionnait car c'était encore bim-v9/v10 (`garde(roi)` passait 
 
 **Non touché** : `js/model/`, `js/db/`, `print.css`. `js/ui/`.
 
-**Vérifié (statique, pas de Node/navigateur dans l'env)** : accolades OK ; `pipeline.test.js` (teste `Scan` en direct) non impacté ; `sansChevauchement` déjà appelé avec un thunk par les tests existants → compatibles. **À tester sur appareil dès déploiement** : scanner un badge réel → doit pointer immédiatement (ding + panneau vert). Si ça marche enfin, revalider aussi le scénario pause-déjeuner (bim-v18) et la torche (bim-v17).
+**Vérifié (statique, pas de Node/navigateur dans l'env)** : accolades OK ; `pipeline.test.js` (teste `Scan` en direct) non impacté ; `sansChevauchement` déjà appelé avec un thunk par les tests existants → compatibles.
+
+**✅ CONFIRMÉ SUR APPAREIL — 2026-09-10** : l'utilisateur a testé après déploiement de bim-v19, **le scan fonctionne**. C'est la première fois que le scan live marche depuis le 8 sept. au matin. Restent à revalider sur le terrain : scénario pause-déjeuner (bim-v18), torche (bim-v17), et la chaîne complète 3 jours.
 
 **Leçon** : tout le travail v10→v18 (« fluidité », « anti-blocage », « scan muet », diagnostic embarqué, autotest, torche) diagnostiquait les **symptômes** de cette seule régression de câblage sans jamais la trouver. `lancerBoucle` n'avait aucun test (navigateur-only supposé) — il en a un maintenant.
 
